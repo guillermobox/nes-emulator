@@ -73,10 +73,9 @@ static inline void cpu_sety(byte value)
  * Chapter 7 of MOS
  * INDEX REGISTER INSTRUCTIONS
  */
-static void op_ldx_inmediate(void) /* page 96 MOS */
+static void op_ldx(void) /* page 96 MOS */
 {
-	cpustate.PC += 1;
-	cpustate.X = cpu_memload(cpustate.PC);
+	cpustate.X = cpu_memload(cpustate.PC++);
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
@@ -87,8 +86,8 @@ static void op_ldx_absolute(void) /* page 96 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
-	address.b[1] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
 	cpustate.X = cpu_memload(address.offset);
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
@@ -100,7 +99,7 @@ static void op_ldx_zero(void) /* page 96 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	cpustate.X = cpu_memload(address.offset);
 	cpustate.N = (cpustate.X & 0x80) != 0;
@@ -113,8 +112,8 @@ static void op_ldx_absolute_y(void) /* page 96 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
-	address.b[1] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
 	addr yoffset = (addr) cpustate.Y;
 	cpustate.X = cpu_memload(address.offset + yoffset);
 	cpustate.N = (cpustate.X & 0x80) != 0;
@@ -127,7 +126,7 @@ static void op_ldx_zero_y(void) /* page 96 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	addr yoffset = (addr) cpustate.Y;
 	cpustate.X = cpu_memload(address.offset + yoffset);
@@ -135,10 +134,9 @@ static void op_ldx_zero_y(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-static void op_ldy_inmediate(void) /* page 96 MOS */
+static void op_ldy(void) /* page 96 MOS */
 {
-	cpustate.PC += 1;
-	cpustate.Y = cpu_memload(cpustate.PC);
+	cpustate.Y = cpu_memload(cpustate.PC++);
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
@@ -149,8 +147,8 @@ static void op_ldy_absolute(void) /* page 96 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
-	address.b[1] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
 	cpustate.Y = cpu_memload(address.offset);
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
@@ -162,7 +160,7 @@ static void op_ldy_zero(void) /* page 96 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	cpustate.Y = cpu_memload(address.offset);
 	cpustate.N = (cpustate.Y & 0x80) != 0;
@@ -175,8 +173,8 @@ static void op_ldy_absolute_x(void) /* page 96 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
-	address.b[1] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
 	addr xoffset = (addr) cpustate.X;
 	cpustate.Y = cpu_memload(address.offset + xoffset);
 	cpustate.N = (cpustate.Y & 0x80) != 0;
@@ -189,7 +187,7 @@ static void op_ldy_zero_x(void) /* page 96 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	addr xoffset = (addr) cpustate.X;
 	cpustate.Y = cpu_memload(address.offset + xoffset);
@@ -203,8 +201,8 @@ static void op_stx_absolute(void) /* page 97 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
-	address.b[1] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
 	cpu_memstore(address.offset, cpustate.X);
 };
 
@@ -214,7 +212,7 @@ static void op_stx_zero(void) /* page 97 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	cpu_memstore(address.offset, cpustate.X);
 };
@@ -225,7 +223,7 @@ static void op_stx_zero_y(void) /* page 97 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	addr yoffset = (addr) cpustate.Y;
 	cpu_memstore(address.offset + yoffset, cpustate.X);
@@ -237,8 +235,8 @@ static void op_sty_absolute(void) /* page 97 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
-	address.b[1] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
 	cpu_memstore(address.offset, cpustate.Y);
 };
 
@@ -248,7 +246,7 @@ static void op_sty_zero(void) /* page 97 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	cpu_memstore(address.offset, cpustate.Y);
 };
@@ -259,7 +257,7 @@ static void op_sty_zero_x(void) /* page 97 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	addr xoffset = (addr) cpustate.X;
 	cpu_memstore(address.offset + xoffset, cpustate.Y);
@@ -295,7 +293,7 @@ static void op_dey(void) /* page 98 MOS */
 
 static void op_cpx(void) /* page 99 MOS */
 {
-	byte value = cpu_memload(++cpustate.PC);
+	byte value = cpu_memload(cpustate.PC++);
 	byte sub = cpustate.X - value;
 	cpustate.Z = sub == 0x00;
 	cpustate.N = (sub & 0x80) != 0;
@@ -308,7 +306,7 @@ static void op_cpx_zero(void) /* page 99 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	byte value = cpu_memload(address.offset);
 	byte sub = cpustate.X - value;
@@ -323,8 +321,8 @@ static void op_cpx_absolute(void) /* page 99 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
-	address.b[1] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
 	byte value = cpu_memload(address.offset);
 	byte sub = cpustate.X - value;
 	cpustate.Z = sub == 0x00;
@@ -334,7 +332,7 @@ static void op_cpx_absolute(void) /* page 99 MOS */
 
 static void op_cpy(void) /* page 99 MOS */
 {
-	byte value = cpu_memload(++cpustate.PC);
+	byte value = cpu_memload(cpustate.PC++);
 	byte sub = cpustate.Y - value;
 	cpustate.Z = sub == 0x00;
 	cpustate.N = (sub & 0x80) != 0;
@@ -347,7 +345,7 @@ static void op_cpy_zero(void) /* page 99 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
 	address.b[1] = 0x00;
 	byte value = cpu_memload(address.offset);
 	byte sub = cpustate.Y - value;
@@ -362,8 +360,8 @@ static void op_cpy_absolute(void) /* page 99 MOS */
 		byte b[2];
 		addr offset;
 	} address;
-	address.b[0] = cpu_memload(++cpustate.PC);
-	address.b[1] = cpu_memload(++cpustate.PC);
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
 	byte value = cpu_memload(address.offset);
 	byte sub = cpustate.Y - value;
 	cpustate.Z = sub == 0x00;
@@ -565,9 +563,9 @@ opfunct opcode_map[] = {
 	/* 9d */ NULL,
 	/* 9e */ NULL,
 	/* 9f */ NULL,
-	/* a0 */ &op_ldy_inmediate,
+	/* a0 */ &op_ldy,
 	/* a1 */ NULL,
-	/* a2 */ &op_ldx_inmediate,
+	/* a2 */ &op_ldx,
 	/* a3 */ NULL,
 	/* a4 */ &op_ldy_zero,
 	/* a5 */ NULL,
@@ -727,11 +725,11 @@ void cpu_run()
 			exit(1);
 		}
 
+		/* advance */
+		cpustate.PC++;
+
 		/* execute */
 		func();
-
-		/* advance */
-		cpustate.PC ++;
 
 	} while (op != 0x00);
 	
