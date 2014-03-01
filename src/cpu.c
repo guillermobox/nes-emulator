@@ -73,7 +73,7 @@ static inline void cpu_sety(byte value)
  * Chapter 7 of MOS
  * INDEX REGISTER INSTRUCTIONS
  */
-void op_ldx_inmediate(void) /* page 96 MOS */
+static void op_ldx_inmediate(void) /* page 96 MOS */
 {
 	cpustate.PC += 1;
 	cpustate.X = cpu_memload(cpustate.PC);
@@ -81,7 +81,7 @@ void op_ldx_inmediate(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_ldx_absolute(void) /* page 96 MOS */
+static void op_ldx_absolute(void) /* page 96 MOS */
 {
 	union {
 		byte b[2];
@@ -94,7 +94,7 @@ void op_ldx_absolute(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_ldx_zero(void) /* page 96 MOS */
+static void op_ldx_zero(void) /* page 96 MOS */
 {
 	union {
 		byte b[2];
@@ -107,7 +107,7 @@ void op_ldx_zero(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_ldx_absolute_y(void) /* page 96 MOS */
+static void op_ldx_absolute_y(void) /* page 96 MOS */
 {
 	union {
 		byte b[2];
@@ -121,7 +121,7 @@ void op_ldx_absolute_y(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_ldx_zero_y(void) /* page 96 MOS */
+static void op_ldx_zero_y(void) /* page 96 MOS */
 {
 	union {
 		byte b[2];
@@ -135,7 +135,7 @@ void op_ldx_zero_y(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_ldy_inmediate(void) /* page 96 MOS */
+static void op_ldy_inmediate(void) /* page 96 MOS */
 {
 	cpustate.PC += 1;
 	cpustate.Y = cpu_memload(cpustate.PC);
@@ -143,7 +143,7 @@ void op_ldy_inmediate(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_ldy_absolute(void) /* page 96 MOS */
+static void op_ldy_absolute(void) /* page 96 MOS */
 {
 	union {
 		byte b[2];
@@ -156,7 +156,7 @@ void op_ldy_absolute(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_ldy_zero(void) /* page 96 MOS */
+static void op_ldy_zero(void) /* page 96 MOS */
 {
 	union {
 		byte b[2];
@@ -169,7 +169,7 @@ void op_ldy_zero(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_ldy_absolute_x(void) /* page 96 MOS */
+static void op_ldy_absolute_x(void) /* page 96 MOS */
 {
 	union {
 		byte b[2];
@@ -183,7 +183,7 @@ void op_ldy_absolute_x(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_ldy_zero_x(void) /* page 96 MOS */
+static void op_ldy_zero_x(void) /* page 96 MOS */
 {
 	union {
 		byte b[2];
@@ -197,7 +197,7 @@ void op_ldy_zero_x(void) /* page 96 MOS */
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_stx_absolute(void) /* page 97 MOS */
+static void op_stx_absolute(void) /* page 97 MOS */
 {
 	union {
 		byte b[2];
@@ -208,7 +208,7 @@ void op_stx_absolute(void) /* page 97 MOS */
 	cpu_memstore(address.offset, cpustate.X);
 };
 
-void op_stx_zero(void) /* page 97 MOS */
+static void op_stx_zero(void) /* page 97 MOS */
 {
 	union {
 		byte b[2];
@@ -219,7 +219,7 @@ void op_stx_zero(void) /* page 97 MOS */
 	cpu_memstore(address.offset, cpustate.X);
 };
 
-void op_stx_zero_y(void) /* page 97 MOS */
+static void op_stx_zero_y(void) /* page 97 MOS */
 {
 	union {
 		byte b[2];
@@ -231,7 +231,7 @@ void op_stx_zero_y(void) /* page 97 MOS */
 	cpu_memstore(address.offset + yoffset, cpustate.X);
 };
 
-void op_sty_absolute(void) /* page 97 MOS */
+static void op_sty_absolute(void) /* page 97 MOS */
 {
 	union {
 		byte b[2];
@@ -242,7 +242,7 @@ void op_sty_absolute(void) /* page 97 MOS */
 	cpu_memstore(address.offset, cpustate.Y);
 };
 
-void op_sty_zero(void) /* page 97 MOS */
+static void op_sty_zero(void) /* page 97 MOS */
 {
 	union {
 		byte b[2];
@@ -253,7 +253,7 @@ void op_sty_zero(void) /* page 97 MOS */
 	cpu_memstore(address.offset, cpustate.Y);
 };
 
-void op_sty_zero_x(void) /* page 97 MOS */
+static void op_sty_zero_x(void) /* page 97 MOS */
 {
 	union {
 		byte b[2];
@@ -265,35 +265,35 @@ void op_sty_zero_x(void) /* page 97 MOS */
 	cpu_memstore(address.offset + xoffset, cpustate.Y);
 };
 
-void op_incx(void) /* page 97 MOS */
+static void op_incx(void) /* page 97 MOS */
 {
 	cpustate.X += 0x01;
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_incy(void) /* page 97 MOS */
+static void op_incy(void) /* page 97 MOS */
 {
 	cpustate.Y += 0x01;
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_dex(void) /* page 98 MOS */
+static void op_dex(void) /* page 98 MOS */
 {
 	cpustate.X -= 0x01;
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_dey(void) /* page 98 MOS */
+static void op_dey(void) /* page 98 MOS */
 {
 	cpustate.Y -= 0x01;
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_cpx(void) /* page 99 MOS */
+static void op_cpx(void) /* page 99 MOS */
 {
 	byte value = cpu_memload(++cpustate.PC);
 	byte sub = cpustate.X - value;
@@ -302,7 +302,7 @@ void op_cpx(void) /* page 99 MOS */
 	cpustate.C = cpustate.X > value;
 };
 
-void op_cpx_zero(void) /* page 99 MOS */
+static void op_cpx_zero(void) /* page 99 MOS */
 {
 	union {
 		byte b[2];
@@ -317,7 +317,7 @@ void op_cpx_zero(void) /* page 99 MOS */
 	cpustate.C = cpustate.X > value;
 };
 
-void op_cpx_absolute(void) /* page 99 MOS */
+static void op_cpx_absolute(void) /* page 99 MOS */
 {
 	union {
 		byte b[2];
@@ -332,7 +332,7 @@ void op_cpx_absolute(void) /* page 99 MOS */
 	cpustate.C = cpustate.X > value;
 };
 
-void op_cpy(void) /* page 99 MOS */
+static void op_cpy(void) /* page 99 MOS */
 {
 	byte value = cpu_memload(++cpustate.PC);
 	byte sub = cpustate.Y - value;
@@ -341,7 +341,7 @@ void op_cpy(void) /* page 99 MOS */
 	cpustate.C = cpustate.Y > value;
 };
 
-void op_cpy_zero(void) /* page 99 MOS */
+static void op_cpy_zero(void) /* page 99 MOS */
 {
 	union {
 		byte b[2];
@@ -356,7 +356,7 @@ void op_cpy_zero(void) /* page 99 MOS */
 	cpustate.C = cpustate.Y > value;
 };
 
-void op_cpy_absolute(void) /* page 99 MOS */
+static void op_cpy_absolute(void) /* page 99 MOS */
 {
 	union {
 		byte b[2];
@@ -371,35 +371,35 @@ void op_cpy_absolute(void) /* page 99 MOS */
 	cpustate.C = cpustate.Y > value;
 };
 
-void op_tax(void) /* page 100 MOS */
+static void op_tax(void) /* page 100 MOS */
 {
 	cpustate.X = cpustate.A;
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_tay(void) /* page 101 MOS */
+static void op_tay(void) /* page 101 MOS */
 {
 	cpustate.Y = cpustate.A;
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_txa(void) /* page 100 MOS */
+static void op_txa(void) /* page 100 MOS */
 {
 	cpustate.A = cpustate.X;
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-void op_tya(void) /* page 101 MOS */
+static void op_tya(void) /* page 101 MOS */
 {
 	cpustate.A = cpustate.Y;
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-void op_brk(void) /* page 144 MOS */
+static void op_brk(void) /* page 144 MOS */
 {
 	/* interrupt to vector IRQ address */
 };
@@ -543,7 +543,7 @@ opfunct opcode_map[] = {
 	/* 87 */ NULL,
 	/* 88 */ &op_dey,
 	/* 89 */ NULL,
-	/* 8a */ NULL,
+	/* 8a */ &op_txa,
 	/* 8b */ NULL,
 	/* 8c */ &op_sty_absolute,
 	/* 8d */ NULL,
@@ -557,7 +557,7 @@ opfunct opcode_map[] = {
 	/* 95 */ NULL,
 	/* 96 */ &op_stx_zero_y,
 	/* 97 */ NULL,
-	/* 98 */ NULL,
+	/* 98 */ &op_tya,
 	/* 99 */ NULL,
 	/* 9a */ NULL,
 	/* 9b */ NULL,
@@ -573,9 +573,9 @@ opfunct opcode_map[] = {
 	/* a5 */ NULL,
 	/* a6 */ &op_ldx_zero,
 	/* a7 */ NULL,
-	/* a8 */ NULL,
+	/* a8 */ &op_tay,
 	/* a9 */ NULL,
-	/* aa */ NULL,
+	/* aa */ &op_tax,
 	/* ab */ NULL,
 	/* ac */ &op_ldy_absolute,
 	/* ad */ NULL,
