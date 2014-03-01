@@ -70,6 +70,126 @@ static inline void cpu_sety(byte value)
 };
 
 /*
+ * Chapter 4 of MOS
+ * TEST BRANCH AND JUMP INSTRUCTIONS
+ */
+static void op_jmp(void) /* page 36 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
+	cpustate.PC = address.offset;
+};
+
+static void op_jmp_indirect(void) /* page 36 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
+	union {
+		byte b[2];
+		addr offset;
+	} newpc;
+	newpc.b[0] = cpu_memload(address.offset);
+	newpc.b[1] = cpu_memload(address.offset + 1);
+	cpustate.PC = newpc.offset;
+};
+
+static void op_bmi(void) /* page 40 MOS */
+{
+	byte diff = cpu_memload(cpustate.PC++);
+	if (cpustate.N) {
+		if (diff & 0x80)
+			cpustate.PC += (diff ^ 0xff) + 0x01;
+		else
+			cpustate.PC += diff;
+	}
+};
+
+static void op_bpl(void) /* page 40 MOS */
+{
+	byte diff = cpu_memload(cpustate.PC++);
+	if (cpustate.N == 0) {
+		if (diff & 0x80)
+			cpustate.PC += (diff ^ 0xff) + 0x01;
+		else
+			cpustate.PC += diff;
+	}
+};
+
+static void op_bcc(void) /* page 40 MOS */
+{
+	byte diff = cpu_memload(cpustate.PC++);
+	if (cpustate.C == 0) {
+		if (diff & 0x80)
+			cpustate.PC += (diff ^ 0xff) + 0x01;
+		else
+			cpustate.PC += diff;
+	}
+};
+
+static void op_bcs(void) /* page 40 MOS */
+{
+	byte diff = cpu_memload(cpustate.PC++);
+	if (cpustate.C) {
+		if (diff & 0x80)
+			cpustate.PC += (diff ^ 0xff) + 0x01;
+		else
+			cpustate.PC += diff;
+	}
+};
+
+static void op_beq(void) /* page 41 MOS */
+{
+	byte diff = cpu_memload(cpustate.PC++);
+	if (cpustate.Z) {
+		if (diff & 0x80)
+			cpustate.PC += (diff ^ 0xff) + 0x01;
+		else
+			cpustate.PC += diff;
+	}
+};
+
+static void op_bne(void) /* page 41 MOS */
+{
+	byte diff = cpu_memload(cpustate.PC++);
+	if (cpustate.Z == 0) {
+		if (diff & 0x80)
+			cpustate.PC -= (diff ^ 0xff) + 0x01;
+		else
+			cpustate.PC += diff;
+	}
+};
+
+static void op_bvs(void) /* page 41 MOS */
+{
+	byte diff = cpu_memload(cpustate.PC++);
+	if (cpustate.V) {
+		if (diff & 0x80)
+			cpustate.PC += (diff ^ 0xff) + 0x01;
+		else
+			cpustate.PC += diff;
+	}
+};
+
+static void op_bvc(void) /* page 41 MOS */
+{
+	byte diff = cpu_memload(cpustate.PC++);
+	if (cpustate.V == 0) {
+		if (diff & 0x80)
+			cpustate.PC += (diff ^ 0xff) + 0x01;
+		else
+			cpustate.PC += diff;
+	}
+};
+
+/*
  * Chapter 7 of MOS
  * INDEX REGISTER INSTRUCTIONS
  */
@@ -419,7 +539,7 @@ opfunct opcode_map[] = {
 	/* 0d */ NULL,
 	/* 0e */ NULL,
 	/* 0f */ NULL,
-	/* 10 */ NULL,
+	/* 10 */ &op_bpl,
 	/* 11 */ NULL,
 	/* 12 */ NULL,
 	/* 13 */ NULL,
@@ -451,7 +571,7 @@ opfunct opcode_map[] = {
 	/* 2d */ NULL,
 	/* 2e */ NULL,
 	/* 2f */ NULL,
-	/* 30 */ NULL,
+	/* 30 */ &op_bmi,
 	/* 31 */ NULL,
 	/* 32 */ NULL,
 	/* 33 */ NULL,
@@ -479,11 +599,11 @@ opfunct opcode_map[] = {
 	/* 49 */ NULL,
 	/* 4a */ NULL,
 	/* 4b */ NULL,
-	/* 4c */ NULL,
+	/* 4c */ &op_jmp,
 	/* 4d */ NULL,
 	/* 4e */ NULL,
 	/* 4f */ NULL,
-	/* 50 */ NULL,
+	/* 50 */ &op_bvc,
 	/* 51 */ NULL,
 	/* 52 */ NULL,
 	/* 53 */ NULL,
@@ -511,11 +631,11 @@ opfunct opcode_map[] = {
 	/* 69 */ NULL,
 	/* 6a */ NULL,
 	/* 6b */ NULL,
-	/* 6c */ NULL,
+	/* 6c */ &op_jmp_indirect,
 	/* 6d */ NULL,
 	/* 6e */ NULL,
 	/* 6f */ NULL,
-	/* 70 */ NULL,
+	/* 70 */ &op_bvs,
 	/* 71 */ NULL,
 	/* 72 */ NULL,
 	/* 73 */ NULL,
@@ -547,7 +667,7 @@ opfunct opcode_map[] = {
 	/* 8d */ NULL,
 	/* 8e */ &op_stx_absolute,
 	/* 8f */ NULL,
-	/* 90 */ NULL,
+	/* 90 */ &op_bcc,
 	/* 91 */ NULL,
 	/* 92 */ NULL,
 	/* 93 */ NULL,
@@ -579,7 +699,7 @@ opfunct opcode_map[] = {
 	/* ad */ NULL,
 	/* ae */ &op_ldx_absolute,
 	/* af */ NULL,
-	/* b0 */ NULL,
+	/* b0 */ &op_bcs,
 	/* b1 */ NULL,
 	/* b2 */ NULL,
 	/* b3 */ NULL,
@@ -611,7 +731,7 @@ opfunct opcode_map[] = {
 	/* cd */ NULL,
 	/* ce */ NULL,
 	/* cf */ NULL,
-	/* d0 */ NULL,
+	/* d0 */ &op_bne,
 	/* d1 */ NULL,
 	/* d2 */ NULL,
 	/* d3 */ NULL,
@@ -643,7 +763,7 @@ opfunct opcode_map[] = {
 	/* ed */ NULL,
 	/* ee */ NULL,
 	/* ef */ NULL,
-	/* f0 */ NULL,
+	/* f0 */ &op_beq,
 	/* f1 */ NULL,
 	/* f2 */ NULL,
 	/* f3 */ NULL,
