@@ -1,0 +1,7 @@
+doc
+*.swp
+*~
+*.o
+tags
+core.dump
+nes-emulator
