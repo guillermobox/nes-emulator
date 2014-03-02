@@ -697,6 +697,37 @@ static void op_tya(void) /* page 101 MOS */
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
+/*
+ * Chapter 8 of MOS
+ * STACK PROCESSING
+ */
+static void op_jsr(void) /* page 106 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} destination, source;
+	destination.b[0] = cpu_memload(cpustate.PC++);
+	destination.b[1] = cpu_memload(cpustate.PC++);
+	source.offset = cpustate.PC;
+	cpu_memstore(0x0100 + cpustate.SP, source.b[0]);
+	cpustate.SP--;
+	cpu_memstore(0x0100 + cpustate.SP, source.b[1]);
+	cpustate.SP--;
+	cpustate.PC = destination.offset;
+};
+
+static void op_rts(void) /* page 108 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} source;
+	source.b[1] = cpu_memload(0x0100 + ++cpustate.SP);
+	source.b[0] = cpu_memload(0x0100 + ++cpustate.SP);
+	cpustate.PC = source.offset;
+};
+
 static void op_brk(void) /* page 144 MOS */
 {
 	/* interrupt to vector IRQ address */
@@ -735,7 +766,7 @@ opfunct opcode_map[] = {
 	/* 1d */ NULL,
 	/* 1e */ NULL,
 	/* 1f */ NULL,
-	/* 20 */ NULL,
+	/* 20 */ &op_jsr,
 	/* 21 */ NULL,
 	/* 22 */ NULL,
 	/* 23 */ NULL,
@@ -799,7 +830,7 @@ opfunct opcode_map[] = {
 	/* 5d */ NULL,
 	/* 5e */ NULL,
 	/* 5f */ NULL,
-	/* 60 */ NULL,
+	/* 60 */ &op_rts,
 	/* 61 */ NULL,
 	/* 62 */ NULL,
 	/* 63 */ NULL,
