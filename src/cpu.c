@@ -710,10 +710,8 @@ static void op_jsr(void) /* page 106 MOS */
 	destination.b[0] = cpu_memload(cpustate.PC++);
 	destination.b[1] = cpu_memload(cpustate.PC++);
 	source.offset = cpustate.PC;
-	cpu_memstore(0x0100 + cpustate.SP, source.b[0]);
-	cpustate.SP--;
-	cpu_memstore(0x0100 + cpustate.SP, source.b[1]);
-	cpustate.SP--;
+	cpu_memstore(0x0100 + cpustate.SP--, source.b[0]);
+	cpu_memstore(0x0100 + cpustate.SP--, source.b[1]);
 	cpustate.PC = destination.offset;
 };
 
@@ -726,6 +724,40 @@ static void op_rts(void) /* page 108 MOS */
 	source.b[1] = cpu_memload(0x0100 + ++cpustate.SP);
 	source.b[0] = cpu_memload(0x0100 + ++cpustate.SP);
 	cpustate.PC = source.offset;
+};
+
+static void op_pha(void) /* page 117 MOS */
+{
+	cpu_memstore(0x0100 + cpustate.SP--, cpustate.A);
+};
+
+static void op_pla(void) /* page 118 MOS */
+{
+	cpustate.A = cpu_memload(0x0100 + ++cpustate.SP);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_txs(void) /* page 120 MOS */
+{
+	cpu_memstore(0x0100 + cpustate.SP--, cpustate.X);
+};
+
+static void op_tsx(void) /* page 122 MOS */
+{
+	cpustate.X = cpu_memload(0x0100 + ++cpustate.SP);
+	cpustate.Z = cpustate.X == 0x00;
+	cpustate.N = (cpustate.X & 0x80) != 0x00;
+};
+
+static void op_php(void) /* page 122 MOS */
+{
+	cpu_memstore(0x0100 + cpustate.SP--, cpustate.P);
+};
+
+static void op_plp(void) /* page 123 MOS */
+{
+	cpustate.P = cpu_memload(0x0100 + ++cpustate.SP);
 };
 
 static void op_brk(void) /* page 144 MOS */
@@ -742,7 +774,7 @@ opfunct opcode_map[] = {
 	/* 05 */ NULL,
 	/* 06 */ NULL,
 	/* 07 */ NULL,
-	/* 08 */ NULL,
+	/* 08 */ &op_php,
 	/* 09 */ NULL,
 	/* 0a */ NULL,
 	/* 0b */ NULL,
@@ -774,7 +806,7 @@ opfunct opcode_map[] = {
 	/* 25 */ NULL,
 	/* 26 */ NULL,
 	/* 27 */ NULL,
-	/* 28 */ NULL,
+	/* 28 */ &op_plp,
 	/* 29 */ NULL,
 	/* 2a */ NULL,
 	/* 2b */ NULL,
@@ -806,7 +838,7 @@ opfunct opcode_map[] = {
 	/* 45 */ NULL,
 	/* 46 */ NULL,
 	/* 47 */ NULL,
-	/* 48 */ NULL,
+	/* 48 */ &op_pha,
 	/* 49 */ NULL,
 	/* 4a */ NULL,
 	/* 4b */ NULL,
@@ -838,7 +870,7 @@ opfunct opcode_map[] = {
 	/* 65 */ NULL,
 	/* 66 */ NULL,
 	/* 67 */ NULL,
-	/* 68 */ NULL,
+	/* 68 */ &op_pla,
 	/* 69 */ NULL,
 	/* 6a */ NULL,
 	/* 6b */ NULL,
@@ -888,7 +920,7 @@ opfunct opcode_map[] = {
 	/* 97 */ NULL,
 	/* 98 */ &op_tya,
 	/* 99 */ NULL,
-	/* 9a */ NULL,
+	/* 9a */ &op_txs,
 	/* 9b */ NULL,
 	/* 9c */ NULL,
 	/* 9d */ NULL,
@@ -920,7 +952,7 @@ opfunct opcode_map[] = {
 	/* b7 */ NULL,
 	/* b8 */ &op_clv,
 	/* b9 */ NULL,
-	/* ba */ NULL,
+	/* ba */ &op_tsx,
 	/* bb */ NULL,
 	/* bc */ &op_ldy_absolute_x,
 	/* bd */ NULL,
