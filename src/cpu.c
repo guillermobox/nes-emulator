@@ -160,7 +160,520 @@ static inline addr get_address_indirect_y()
 };
 
 /*
- * Capter 3 of MOS
+ * Chapter 2 of MOS
+ * THE DATA BUS, ACCUMULATOR AND ARITHMETIC UNIT
+ */
+static void op_lda(void) /* page 4 MOS */
+{
+	cpustate.A = cpu_memload(cpustate.PC++);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_lda_absolute(void) /* page 4 MOS */
+{
+	addr memaddr = get_address_absolute();
+	cpustate.A = cpu_memload(memaddr);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_lda_absolute_x(void) /* page 4 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	cpustate.A = cpu_memload(memaddr);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_lda_absolute_y(void) /* page 4 MOS */
+{
+	addr memaddr = get_address_absolute_y();
+	cpustate.A = cpu_memload(memaddr);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_lda_zero(void) /* page 4 MOS */
+{
+	addr memaddr = get_address_zero();
+	cpustate.A = cpu_memload(memaddr);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_lda_zero_x(void) /* page 4 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	cpustate.A = cpu_memload(memaddr);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_lda_indirect_x(void) /* page 4 MOS */
+{
+	addr memaddr = get_address_indirect_x();
+	cpustate.A = cpu_memload(memaddr);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_lda_indirect_y(void) /* page 4 MOS */
+{
+	addr memaddr = get_address_indirect_y();
+	cpustate.A = cpu_memload(memaddr);
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sta_absolute(void) /* page 5 MOS */
+{
+	addr memaddr = get_address_absolute();
+	cpu_memstore(memaddr, cpustate.A);
+};
+
+static void op_sta_absolute_x(void) /* page 5 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	cpu_memstore(memaddr, cpustate.A);
+};
+
+static void op_sta_absolute_y(void) /* page 5 MOS */
+{
+	addr memaddr = get_address_absolute_y();
+	cpu_memstore(memaddr, cpustate.A);
+};
+
+static void op_sta_zero(void) /* page 5 MOS */
+{
+	addr memaddr = get_address_zero();
+	cpu_memstore(memaddr, cpustate.A);
+};
+
+static void op_sta_zero_x(void) /* page 5 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	cpu_memstore(memaddr, cpustate.A);
+};
+
+static void op_sta_indirect_x(void) /* page 5 MOS */
+{
+	addr memaddr = get_address_indirect_x();
+	cpu_memstore(memaddr, cpustate.A);
+};
+
+static void op_sta_indirect_y(void) /* page 5 MOS */
+{
+	addr memaddr = get_address_indirect_y();
+	cpu_memstore(memaddr, cpustate.A);
+};
+
+static void op_adc(void) /* page 7 MOS */
+{
+	byte value = cpu_memload(cpustate.PC++);
+	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_adc_absolute(void) /* page 7 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_adc_absolute_x(void) /* page 7 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_adc_absolute_y(void) /* page 7 MOS */
+{
+	addr memaddr = get_address_absolute_y();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_adc_zero(void) /* page 7 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_adc_zero_x(void) /* page 7 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_adc_indirect_x(void) /* page 7 MOS */
+{
+	addr memaddr = get_address_indirect_x();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_adc_indirect_y(void) /* page 7 MOS */
+{
+	addr memaddr = get_address_indirect_y();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sbc(void) /* page 14 MOS */
+{
+	byte value = cpu_memload(cpustate.PC++);
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sbc_absolute(void) /* page 14 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sbc_absolute_x(void) /* page 14 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sbc_absolute_y(void) /* page 14 MOS */
+{
+	addr memaddr = get_address_absolute_y();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sbc_zero(void) /* page 14 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sbc_zero_x(void) /* page 14 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sbc_indirect_x(void) /* page 14 MOS */
+{
+	addr memaddr = get_address_indirect_x();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_sbc_indirect_y(void) /* page 14 MOS */
+{
+	addr memaddr = get_address_indirect_y();
+	byte value = cpu_memload(memaddr);
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
+	cpustate.A = sum;
+	cpustate.C = (sum & 0x0100) != 0x0000;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_and(void) /* page 20 MOS */
+{
+	byte value = cpu_memload(cpustate.PC++);
+	cpustate.A &= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_and_absolute(void) /* page 20 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	cpustate.A &= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_and_absolute_x(void) /* page 20 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A &= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_and_absolute_y(void) /* page 20 MOS */
+{
+	addr memaddr = get_address_absolute_y();
+	byte value = cpu_memload(memaddr);
+	cpustate.A &= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_and_zero(void) /* page 20 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	cpustate.A &= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_and_zero_x(void) /* page 20 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A &= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_and_indirect_x(void) /* page 20 MOS */
+{
+	addr memaddr = get_address_indirect_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A &= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_and_indirect_y(void) /* page 20 MOS */
+{
+	addr memaddr = get_address_indirect_y();
+	byte value = cpu_memload(memaddr);
+	cpustate.A &= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_ora(void) /* page 21 MOS */
+{
+	byte value = cpu_memload(cpustate.PC++);
+	cpustate.A |= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_ora_absolute(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	cpustate.A |= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_ora_absolute_x(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A |= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_ora_absolute_y(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_absolute_y();
+	byte value = cpu_memload(memaddr);
+	cpustate.A |= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_ora_zero(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	cpustate.A |= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_ora_zero_x(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A |= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_ora_indirect_x(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_indirect_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A |= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_ora_indirect_y(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_indirect_y();
+	byte value = cpu_memload(memaddr);
+	cpustate.A |= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_eor(void) /* page 21 MOS */
+{
+	byte value = cpu_memload(cpustate.PC++);
+	cpustate.A ^= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_eor_absolute(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	cpustate.A ^= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_eor_absolute_x(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A ^= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_eor_absolute_y(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_absolute_y();
+	byte value = cpu_memload(memaddr);
+	cpustate.A ^= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_eor_zero(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	cpustate.A ^= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_eor_zero_x(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A ^= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_eor_indirect_x(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_indirect_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.A ^= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+static void op_eor_indirect_y(void) /* page 21 MOS */
+{
+	addr memaddr = get_address_indirect_y();
+	byte value = cpu_memload(memaddr);
+	cpustate.A ^= value;
+	cpustate.Z = cpustate.A == 0x00;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+};
+
+
+/*
+ * Chapter 3 of MOS
  * CONCEPTS OF FLAGS AND STATUS REGISTER
  */
 static void op_sec(void) /* page 24 MOS */
@@ -719,139 +1232,139 @@ static void op_brk(void) /* page 144 MOS */
 
 opfunct opcode_map[] = {
 	/* 00 */ &op_brk,
-	/* 01 */ NULL,
+	/* 01 */ &op_ora_indirect_x,
 	/* 02 */ NULL,
 	/* 03 */ NULL,
 	/* 04 */ NULL,
-	/* 05 */ NULL,
+	/* 05 */ &op_ora_zero,
 	/* 06 */ NULL,
 	/* 07 */ NULL,
 	/* 08 */ &op_php,
-	/* 09 */ NULL,
+	/* 09 */ &op_ora,
 	/* 0a */ NULL,
 	/* 0b */ NULL,
 	/* 0c */ NULL,
-	/* 0d */ NULL,
+	/* 0d */ &op_ora_absolute,
 	/* 0e */ NULL,
 	/* 0f */ NULL,
 	/* 10 */ &op_bpl,
-	/* 11 */ NULL,
+	/* 11 */ &op_ora_indirect_y,
 	/* 12 */ NULL,
 	/* 13 */ NULL,
 	/* 14 */ NULL,
-	/* 15 */ NULL,
+	/* 15 */ &op_ora_zero_x,
 	/* 16 */ NULL,
 	/* 17 */ NULL,
 	/* 18 */ &op_clc,
-	/* 19 */ NULL,
+	/* 19 */ &op_ora_absolute_y,
 	/* 1a */ NULL,
 	/* 1b */ NULL,
 	/* 1c */ NULL,
-	/* 1d */ NULL,
+	/* 1d */ &op_ora_absolute_x,
 	/* 1e */ NULL,
 	/* 1f */ NULL,
 	/* 20 */ &op_jsr,
-	/* 21 */ NULL,
+	/* 21 */ &op_and_indirect_x,
 	/* 22 */ NULL,
 	/* 23 */ NULL,
 	/* 24 */ &op_bit_zero,
-	/* 25 */ NULL,
+	/* 25 */ &op_and_zero,
 	/* 26 */ NULL,
 	/* 27 */ NULL,
 	/* 28 */ &op_plp,
-	/* 29 */ NULL,
+	/* 29 */ &op_and,
 	/* 2a */ NULL,
 	/* 2b */ NULL,
 	/* 2c */ &op_bit_absolute,
-	/* 2d */ NULL,
+	/* 2d */ &op_and_absolute,
 	/* 2e */ NULL,
 	/* 2f */ NULL,
 	/* 30 */ &op_bmi,
-	/* 31 */ NULL,
+	/* 31 */ &op_and_indirect_y,
 	/* 32 */ NULL,
 	/* 33 */ NULL,
 	/* 34 */ NULL,
-	/* 35 */ NULL,
+	/* 35 */ &op_and_zero_x,
 	/* 36 */ NULL,
 	/* 37 */ NULL,
 	/* 38 */ &op_sec,
-	/* 39 */ NULL,
+	/* 39 */ &op_and_absolute_y,
 	/* 3a */ NULL,
 	/* 3b */ NULL,
 	/* 3c */ NULL,
-	/* 3d */ NULL,
+	/* 3d */ &op_and_absolute_x,
 	/* 3e */ NULL,
 	/* 3f */ NULL,
 	/* 40 */ NULL,
-	/* 41 */ NULL,
+	/* 41 */ &op_eor_indirect_x,
 	/* 42 */ NULL,
 	/* 43 */ NULL,
 	/* 44 */ NULL,
-	/* 45 */ NULL,
+	/* 45 */ &op_eor_zero,
 	/* 46 */ NULL,
 	/* 47 */ NULL,
 	/* 48 */ &op_pha,
-	/* 49 */ NULL,
+	/* 49 */ &op_eor,
 	/* 4a */ NULL,
 	/* 4b */ NULL,
 	/* 4c */ &op_jmp,
-	/* 4d */ NULL,
+	/* 4d */ &op_eor_absolute,
 	/* 4e */ NULL,
 	/* 4f */ NULL,
 	/* 50 */ &op_bvc,
-	/* 51 */ NULL,
+	/* 51 */ &op_eor_indirect_y,
 	/* 52 */ NULL,
 	/* 53 */ NULL,
 	/* 54 */ NULL,
-	/* 55 */ NULL,
+	/* 55 */ &op_eor_zero_x,
 	/* 56 */ NULL,
 	/* 57 */ NULL,
 	/* 58 */ &op_cli,
-	/* 59 */ NULL,
+	/* 59 */ &op_eor_absolute_y,
 	/* 5a */ NULL,
 	/* 5b */ NULL,
 	/* 5c */ NULL,
-	/* 5d */ NULL,
+	/* 5d */ &op_eor_absolute_x,
 	/* 5e */ NULL,
 	/* 5f */ NULL,
 	/* 60 */ &op_rts,
-	/* 61 */ NULL,
+	/* 61 */ &op_adc_indirect_x,
 	/* 62 */ NULL,
 	/* 63 */ NULL,
 	/* 64 */ NULL,
-	/* 65 */ NULL,
+	/* 65 */ &op_adc_zero,
 	/* 66 */ NULL,
 	/* 67 */ NULL,
 	/* 68 */ &op_pla,
-	/* 69 */ NULL,
+	/* 69 */ &op_adc,
 	/* 6a */ NULL,
 	/* 6b */ NULL,
 	/* 6c */ &op_jmp_indirect,
-	/* 6d */ NULL,
+	/* 6d */ &op_adc_absolute,
 	/* 6e */ NULL,
 	/* 6f */ NULL,
 	/* 70 */ &op_bvs,
-	/* 71 */ NULL,
+	/* 71 */ &op_adc_indirect_y,
 	/* 72 */ NULL,
 	/* 73 */ NULL,
 	/* 74 */ NULL,
-	/* 75 */ NULL,
+	/* 75 */ &op_adc_zero_x,
 	/* 76 */ NULL,
 	/* 77 */ NULL,
 	/* 78 */ &op_sei,
-	/* 79 */ NULL,
+	/* 79 */ &op_adc_absolute_y,
 	/* 7a */ NULL,
 	/* 7b */ NULL,
 	/* 7c */ NULL,
-	/* 7d */ NULL,
+	/* 7d */ &op_adc_absolute_x,
 	/* 7e */ NULL,
 	/* 7f */ NULL,
 	/* 80 */ NULL,
-	/* 81 */ NULL,
+	/* 81 */ &op_sta_indirect_x,
 	/* 82 */ NULL,
 	/* 83 */ NULL,
 	/* 84 */ &op_sty_zero,
-	/* 85 */ NULL,
+	/* 85 */ &op_sta_zero,
 	/* 86 */ &op_stx_zero,
 	/* 87 */ NULL,
 	/* 88 */ &op_dey,
@@ -859,55 +1372,55 @@ opfunct opcode_map[] = {
 	/* 8a */ &op_txa,
 	/* 8b */ NULL,
 	/* 8c */ &op_sty_absolute,
-	/* 8d */ NULL,
+	/* 8d */ &op_sta_absolute,
 	/* 8e */ &op_stx_absolute,
 	/* 8f */ NULL,
 	/* 90 */ &op_bcc,
-	/* 91 */ NULL,
+	/* 91 */ &op_sta_indirect_y,
 	/* 92 */ NULL,
 	/* 93 */ NULL,
 	/* 94 */ &op_sty_zero_x,
-	/* 95 */ NULL,
+	/* 95 */ &op_sta_zero_x,
 	/* 96 */ &op_stx_zero_y,
 	/* 97 */ NULL,
 	/* 98 */ &op_tya,
-	/* 99 */ NULL,
+	/* 99 */ &op_sta_absolute_y,
 	/* 9a */ &op_txs,
 	/* 9b */ NULL,
 	/* 9c */ NULL,
-	/* 9d */ NULL,
+	/* 9d */ &op_sta_absolute_x,
 	/* 9e */ NULL,
 	/* 9f */ NULL,
 	/* a0 */ &op_ldy,
-	/* a1 */ NULL,
+	/* a1 */ &op_lda_indirect_x,
 	/* a2 */ &op_ldx,
 	/* a3 */ NULL,
 	/* a4 */ &op_ldy_zero,
-	/* a5 */ NULL,
+	/* a5 */ &op_lda_zero,
 	/* a6 */ &op_ldx_zero,
 	/* a7 */ NULL,
 	/* a8 */ &op_tay,
-	/* a9 */ NULL,
+	/* a9 */ &op_lda,
 	/* aa */ &op_tax,
 	/* ab */ NULL,
 	/* ac */ &op_ldy_absolute,
-	/* ad */ NULL,
+	/* ad */ &op_lda_absolute,
 	/* ae */ &op_ldx_absolute,
 	/* af */ NULL,
 	/* b0 */ &op_bcs,
-	/* b1 */ NULL,
+	/* b1 */ &op_lda_indirect_y,
 	/* b2 */ NULL,
 	/* b3 */ NULL,
 	/* b4 */ &op_ldy_zero_x,
-	/* b5 */ NULL,
+	/* b5 */ &op_lda_zero_x,
 	/* b6 */ &op_ldx_zero_y,
 	/* b7 */ NULL,
 	/* b8 */ &op_clv,
-	/* b9 */ NULL,
+	/* b9 */ &op_lda_absolute_y,
 	/* ba */ &op_tsx,
 	/* bb */ NULL,
 	/* bc */ &op_ldy_absolute_x,
-	/* bd */ NULL,
+	/* bd */ &op_lda_absolute_x,
 	/* be */ &op_ldx_absolute_y,
 	/* bf */ NULL,
 	/* c0 */ &op_cpy,
@@ -943,35 +1456,35 @@ opfunct opcode_map[] = {
 	/* de */ NULL,
 	/* df */ NULL,
 	/* e0 */ &op_cpx,
-	/* e1 */ NULL,
+	/* e1 */ &op_sbc_indirect_x,
 	/* e2 */ NULL,
 	/* e3 */ NULL,
 	/* e4 */ &op_cpx_zero,
-	/* e5 */ NULL,
+	/* e5 */ &op_sbc_zero,
 	/* e6 */ NULL,
 	/* e7 */ NULL,
 	/* e8 */ &op_incx,
-	/* e9 */ NULL,
+	/* e9 */ &op_sbc,
 	/* ea */ NULL,
 	/* eb */ NULL,
 	/* ec */ &op_cpx_absolute,
-	/* ed */ NULL,
+	/* ed */ &op_sbc_absolute,
 	/* ee */ NULL,
 	/* ef */ NULL,
 	/* f0 */ &op_beq,
-	/* f1 */ NULL,
+	/* f1 */ &op_sbc_indirect_y,
 	/* f2 */ NULL,
 	/* f3 */ NULL,
 	/* f4 */ NULL,
-	/* f5 */ NULL,
+	/* f5 */ &op_sbc_zero_x,
 	/* f6 */ NULL,
 	/* f7 */ NULL,
 	/* f8 */ &op_sed,
-	/* f9 */ NULL,
+	/* f9 */ &op_sbc_absolute_y,
 	/* fa */ NULL,
 	/* fb */ NULL,
 	/* fc */ NULL,
-	/* fd */ NULL,
+	/* fd */ &op_sbc_absolute_x,
 	/* fe */ NULL,
 	/* ff */ NULL,
 };
