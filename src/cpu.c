@@ -70,6 +70,45 @@ static inline void cpu_sety(byte value)
 };
 
 /*
+ * Capter 3 of MOS
+ * CONCEPTS OF FLAGS AND STATUS REGISTER
+ */
+static void op_sec(void) /* page 24 MOS */
+{
+	cpustate.C = 1;
+};
+
+static void op_clc(void) /* page 25 MOS */
+{
+	cpustate.C = 0;
+};
+
+static void op_sei(void) /* page 26 MOS */
+{
+	cpustate.I = 1;
+};
+
+static void op_cli(void) /* page 26 MOS */
+{
+	cpustate.I = 0;
+};
+
+static void op_sed(void) /* page 26 MOS */
+{
+	cpustate.D = 1;
+};
+
+static void op_cld(void) /* page 27 MOS */
+{
+	cpustate.D = 0;
+};
+
+static void op_clv(void) /* page 28 MOS */
+{
+	cpustate.V = 0;
+};
+
+/*
  * Chapter 4 of MOS
  * TEST BRANCH AND JUMP INSTRUCTIONS
  */
@@ -688,7 +727,7 @@ opfunct opcode_map[] = {
 	/* 15 */ NULL,
 	/* 16 */ NULL,
 	/* 17 */ NULL,
-	/* 18 */ NULL,
+	/* 18 */ &op_clc,
 	/* 19 */ NULL,
 	/* 1a */ NULL,
 	/* 1b */ NULL,
@@ -720,7 +759,7 @@ opfunct opcode_map[] = {
 	/* 35 */ NULL,
 	/* 36 */ NULL,
 	/* 37 */ NULL,
-	/* 38 */ NULL,
+	/* 38 */ &op_sec,
 	/* 39 */ NULL,
 	/* 3a */ NULL,
 	/* 3b */ NULL,
@@ -752,7 +791,7 @@ opfunct opcode_map[] = {
 	/* 55 */ NULL,
 	/* 56 */ NULL,
 	/* 57 */ NULL,
-	/* 58 */ NULL,
+	/* 58 */ &op_cli,
 	/* 59 */ NULL,
 	/* 5a */ NULL,
 	/* 5b */ NULL,
@@ -784,7 +823,7 @@ opfunct opcode_map[] = {
 	/* 75 */ NULL,
 	/* 76 */ NULL,
 	/* 77 */ NULL,
-	/* 78 */ NULL,
+	/* 78 */ &op_sei,
 	/* 79 */ NULL,
 	/* 7a */ NULL,
 	/* 7b */ NULL,
@@ -848,7 +887,7 @@ opfunct opcode_map[] = {
 	/* b5 */ NULL,
 	/* b6 */ &op_ldx_zero_y,
 	/* b7 */ NULL,
-	/* b8 */ NULL,
+	/* b8 */ &op_clv,
 	/* b9 */ NULL,
 	/* ba */ NULL,
 	/* bb */ NULL,
@@ -880,7 +919,7 @@ opfunct opcode_map[] = {
 	/* d5 */ &op_cmp_zero_x,
 	/* d6 */ NULL,
 	/* d7 */ NULL,
-	/* d8 */ NULL,
+	/* d8 */ &op_cld,
 	/* d9 */ &op_cmp_absolute_y,
 	/* da */ NULL,
 	/* db */ NULL,
@@ -912,7 +951,7 @@ opfunct opcode_map[] = {
 	/* f5 */ NULL,
 	/* f6 */ NULL,
 	/* f7 */ NULL,
-	/* f8 */ NULL,
+	/* f8 */ &op_sed,
 	/* f9 */ NULL,
 	/* fa */ NULL,
 	/* fb */ NULL,
