@@ -1230,6 +1230,310 @@ static void op_brk(void) /* page 144 MOS */
 	/* interrupt to vector IRQ address */
 };
 
+/*
+ * Chapter 10
+ * SHIFT AND MEMORY MODIFY INSTRUCTIONS
+ */
+static void op_lsr(void) /* page 148 MOS */
+{
+	cpustate.C = cpustate.A & 0x01;
+	cpustate.A >>= 1;
+	cpustate.N = 0;
+	cpustate.Z = cpustate.A != 0x00;
+};
+
+static void op_lsr_zero(void) /* page 148 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	cpustate.C = value & 0x01;
+	value >>= 1;
+	cpustate.N = 0;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_lsr_zero_x(void) /* page 148 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.C = value & 0x01;
+	value >>= 1;
+	cpustate.N = 0;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_lsr_absolute(void) /* page 148 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	value >>= 1;
+	cpustate.C = value & 0x01;
+	cpustate.N = 0;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_lsr_absolute_x(void) /* page 148 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	value >>= 1;
+	cpustate.C = value & 0x01;
+	cpustate.N = 0;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_asl(void) /* page 149 MOS */
+{
+	cpustate.C = (cpustate.A & 0x80) != 0x00;
+	cpustate.A <<= 1;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+	cpustate.Z = cpustate.A != 0x00;
+};
+
+static void op_asl_zero(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	cpustate.C = (value & 0x80) != 0x00;
+	value <<= 1;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_asl_zero_x(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.C = (value & 0x80) != 0x00;
+	value <<= 1;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_asl_absolute(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	cpustate.C = (value & 0x80) != 0x00;
+	value <<= 1;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_asl_absolute_x(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	cpustate.C = (value & 0x80) != 0x00;
+	value <<= 1;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_rol(void) /* page 149 MOS */
+{
+	byte oldc = cpustate.C;
+	cpustate.C = (cpustate.A & 0x80) != 0x00;
+	cpustate.A <<= 1;
+	cpustate.A += oldc;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+	cpustate.Z = cpustate.A != 0x00;
+};
+
+static void op_rol_zero(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	byte oldc = cpustate.C;
+	cpustate.C = (value & 0x80) != 0x00;
+	value <<= 1;
+	value += oldc;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_rol_zero_x(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	byte oldc = cpustate.C;
+	cpustate.C = (value & 0x80) != 0x00;
+	value <<= 1;
+	value += oldc;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_rol_absolute(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	byte oldc = cpustate.C;
+	cpustate.C = (value & 0x80) != 0x00;
+	value <<= 1;
+	value += oldc;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_rol_absolute_x(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	byte oldc = cpustate.C;
+	cpustate.C = (value & 0x80) != 0x00;
+	value <<= 1;
+	value += oldc;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_ror(void) /* page 150 MOS */
+{
+	byte oldc = cpustate.C;
+	cpustate.C = cpustate.A & 0x01;
+	cpustate.A >>= 1;
+	cpustate.A += 0x80 & oldc ;
+	cpustate.N = (cpustate.A & 0x80) != 0x00;
+	cpustate.Z = cpustate.A != 0x00;
+};
+
+static void op_ror_zero(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr);
+	byte oldc = cpustate.C;
+	cpustate.C = value & 0x01;
+	value >>= 1;
+	value += 0x80 & oldc;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_ror_zero_x(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr);
+	byte oldc = cpustate.C;
+	cpustate.C = value & 0x01;
+	value >>= 1;
+	value += 0x80 & oldc;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_ror_absolute(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr);
+	byte oldc = cpustate.C;
+	cpustate.C = value & 0x01;
+	value >>= 1;
+	value += 0x80 & oldc;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_ror_absolute_x(void) /* page 149 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr);
+	byte oldc = cpustate.C;
+	cpustate.C = value & 0x01;
+	value >>= 1;
+	value += 0x80 & oldc;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpustate.Z = value != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_inc_absolute(void) /* page 155 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr) + 1;
+	cpustate.Z = value == 0x00;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_inc_absolute_x(void) /* page 155 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr) + 1;
+	cpustate.Z = value == 0x00;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_inc_zero(void) /* page 155 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr) + 1;
+	cpustate.Z = value == 0x00;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_inc_zero_x(void) /* page 155 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr) + 1;
+	cpustate.Z = value == 0x00;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_dec_absolute(void) /* page 155 MOS */
+{
+	addr memaddr = get_address_absolute();
+	byte value = cpu_memload(memaddr) - 1;
+	cpustate.Z = value == 0x00;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_dec_absolute_x(void) /* page 155 MOS */
+{
+	addr memaddr = get_address_absolute_x();
+	byte value = cpu_memload(memaddr) - 1;
+	cpustate.Z = value == 0x00;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_dec_zero(void) /* page 155 MOS */
+{
+	addr memaddr = get_address_zero();
+	byte value = cpu_memload(memaddr) - 1;
+	cpustate.Z = value == 0x00;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
+static void op_dec_zero_x(void) /* page 155 MOS */
+{
+	addr memaddr = get_address_zero_x();
+	byte value = cpu_memload(memaddr) - 1;
+	cpustate.Z = value == 0x00;
+	cpustate.N = (value & 0x80) != 0x00;
+	cpu_memstore(memaddr, value);
+};
+
 opfunct opcode_map[] = {
 	/* 00 */ &op_brk,
 	/* 01 */ &op_ora_indirect_x,
@@ -1237,15 +1541,15 @@ opfunct opcode_map[] = {
 	/* 03 */ NULL,
 	/* 04 */ NULL,
 	/* 05 */ &op_ora_zero,
-	/* 06 */ NULL,
+	/* 06 */ &op_asl_zero,
 	/* 07 */ NULL,
 	/* 08 */ &op_php,
 	/* 09 */ &op_ora,
-	/* 0a */ NULL,
+	/* 0a */ &op_asl,
 	/* 0b */ NULL,
 	/* 0c */ NULL,
 	/* 0d */ &op_ora_absolute,
-	/* 0e */ NULL,
+	/* 0e */ &op_asl_absolute,
 	/* 0f */ NULL,
 	/* 10 */ &op_bpl,
 	/* 11 */ &op_ora_indirect_y,
@@ -1253,7 +1557,7 @@ opfunct opcode_map[] = {
 	/* 13 */ NULL,
 	/* 14 */ NULL,
 	/* 15 */ &op_ora_zero_x,
-	/* 16 */ NULL,
+	/* 16 */ &op_asl_zero_x,
 	/* 17 */ NULL,
 	/* 18 */ &op_clc,
 	/* 19 */ &op_ora_absolute_y,
@@ -1261,7 +1565,7 @@ opfunct opcode_map[] = {
 	/* 1b */ NULL,
 	/* 1c */ NULL,
 	/* 1d */ &op_ora_absolute_x,
-	/* 1e */ NULL,
+	/* 1e */ &op_asl_absolute_x,
 	/* 1f */ NULL,
 	/* 20 */ &op_jsr,
 	/* 21 */ &op_and_indirect_x,
@@ -1269,15 +1573,15 @@ opfunct opcode_map[] = {
 	/* 23 */ NULL,
 	/* 24 */ &op_bit_zero,
 	/* 25 */ &op_and_zero,
-	/* 26 */ NULL,
+	/* 26 */ &op_rol_zero,
 	/* 27 */ NULL,
 	/* 28 */ &op_plp,
 	/* 29 */ &op_and,
-	/* 2a */ NULL,
+	/* 2a */ &op_rol,
 	/* 2b */ NULL,
 	/* 2c */ &op_bit_absolute,
 	/* 2d */ &op_and_absolute,
-	/* 2e */ NULL,
+	/* 2e */ &op_rol_absolute,
 	/* 2f */ NULL,
 	/* 30 */ &op_bmi,
 	/* 31 */ &op_and_indirect_y,
@@ -1285,7 +1589,7 @@ opfunct opcode_map[] = {
 	/* 33 */ NULL,
 	/* 34 */ NULL,
 	/* 35 */ &op_and_zero_x,
-	/* 36 */ NULL,
+	/* 36 */ &op_rol_zero_x,
 	/* 37 */ NULL,
 	/* 38 */ &op_sec,
 	/* 39 */ &op_and_absolute_y,
@@ -1293,7 +1597,7 @@ opfunct opcode_map[] = {
 	/* 3b */ NULL,
 	/* 3c */ NULL,
 	/* 3d */ &op_and_absolute_x,
-	/* 3e */ NULL,
+	/* 3e */ &op_rol_absolute_x,
 	/* 3f */ NULL,
 	/* 40 */ NULL,
 	/* 41 */ &op_eor_indirect_x,
@@ -1301,15 +1605,15 @@ opfunct opcode_map[] = {
 	/* 43 */ NULL,
 	/* 44 */ NULL,
 	/* 45 */ &op_eor_zero,
-	/* 46 */ NULL,
+	/* 46 */ &op_lsr_zero,
 	/* 47 */ NULL,
 	/* 48 */ &op_pha,
 	/* 49 */ &op_eor,
-	/* 4a */ NULL,
+	/* 4a */ &op_lsr,
 	/* 4b */ NULL,
 	/* 4c */ &op_jmp,
 	/* 4d */ &op_eor_absolute,
-	/* 4e */ NULL,
+	/* 4e */ &op_lsr_absolute,
 	/* 4f */ NULL,
 	/* 50 */ &op_bvc,
 	/* 51 */ &op_eor_indirect_y,
@@ -1317,7 +1621,7 @@ opfunct opcode_map[] = {
 	/* 53 */ NULL,
 	/* 54 */ NULL,
 	/* 55 */ &op_eor_zero_x,
-	/* 56 */ NULL,
+	/* 56 */ &op_lsr_zero_x,
 	/* 57 */ NULL,
 	/* 58 */ &op_cli,
 	/* 59 */ &op_eor_absolute_y,
@@ -1325,7 +1629,7 @@ opfunct opcode_map[] = {
 	/* 5b */ NULL,
 	/* 5c */ NULL,
 	/* 5d */ &op_eor_absolute_x,
-	/* 5e */ NULL,
+	/* 5e */ &op_lsr_absolute_x,
 	/* 5f */ NULL,
 	/* 60 */ &op_rts,
 	/* 61 */ &op_adc_indirect_x,
@@ -1333,15 +1637,15 @@ opfunct opcode_map[] = {
 	/* 63 */ NULL,
 	/* 64 */ NULL,
 	/* 65 */ &op_adc_zero,
-	/* 66 */ NULL,
+	/* 66 */ &op_ror_zero,
 	/* 67 */ NULL,
 	/* 68 */ &op_pla,
 	/* 69 */ &op_adc,
-	/* 6a */ NULL,
+	/* 6a */ &op_ror,
 	/* 6b */ NULL,
 	/* 6c */ &op_jmp_indirect,
 	/* 6d */ &op_adc_absolute,
-	/* 6e */ NULL,
+	/* 6e */ &op_ror_absolute,
 	/* 6f */ NULL,
 	/* 70 */ &op_bvs,
 	/* 71 */ &op_adc_indirect_y,
@@ -1349,7 +1653,7 @@ opfunct opcode_map[] = {
 	/* 73 */ NULL,
 	/* 74 */ NULL,
 	/* 75 */ &op_adc_zero_x,
-	/* 76 */ NULL,
+	/* 76 */ &op_ror_zero_x,
 	/* 77 */ NULL,
 	/* 78 */ &op_sei,
 	/* 79 */ &op_adc_absolute_y,
@@ -1357,7 +1661,7 @@ opfunct opcode_map[] = {
 	/* 7b */ NULL,
 	/* 7c */ NULL,
 	/* 7d */ &op_adc_absolute_x,
-	/* 7e */ NULL,
+	/* 7e */ &op_ror_absolute_x,
 	/* 7f */ NULL,
 	/* 80 */ NULL,
 	/* 81 */ &op_sta_indirect_x,
@@ -1429,7 +1733,7 @@ opfunct opcode_map[] = {
 	/* c3 */ NULL,
 	/* c4 */ &op_cpy_zero,
 	/* c5 */ &op_cmp_zero,
-	/* c6 */ NULL,
+	/* c6 */ &op_dec_zero,
 	/* c7 */ NULL,
 	/* c8 */ &op_incy,
 	/* c9 */ &op_cmp,
@@ -1437,7 +1741,7 @@ opfunct opcode_map[] = {
 	/* cb */ NULL,
 	/* cc */ &op_cpy_absolute,
 	/* cd */ &op_cmp_absolute,
-	/* ce */ NULL,
+	/* ce */ &op_dec_absolute,
 	/* cf */ NULL,
 	/* d0 */ &op_bne,
 	/* d1 */ &op_cmp_indirect_y,
@@ -1445,7 +1749,7 @@ opfunct opcode_map[] = {
 	/* d3 */ NULL,
 	/* d4 */ NULL,
 	/* d5 */ &op_cmp_zero_x,
-	/* d6 */ NULL,
+	/* d6 */ &op_dec_zero_x,
 	/* d7 */ NULL,
 	/* d8 */ &op_cld,
 	/* d9 */ &op_cmp_absolute_y,
@@ -1453,7 +1757,7 @@ opfunct opcode_map[] = {
 	/* db */ NULL,
 	/* dc */ NULL,
 	/* dd */ &op_cmp_absolute_x,
-	/* de */ NULL,
+	/* de */ &op_dec_absolute_x,
 	/* df */ NULL,
 	/* e0 */ &op_cpx,
 	/* e1 */ &op_sbc_indirect_x,
@@ -1461,7 +1765,7 @@ opfunct opcode_map[] = {
 	/* e3 */ NULL,
 	/* e4 */ &op_cpx_zero,
 	/* e5 */ &op_sbc_zero,
-	/* e6 */ NULL,
+	/* e6 */ &op_inc_zero,
 	/* e7 */ NULL,
 	/* e8 */ &op_incx,
 	/* e9 */ &op_sbc,
@@ -1469,7 +1773,7 @@ opfunct opcode_map[] = {
 	/* eb */ NULL,
 	/* ec */ &op_cpx_absolute,
 	/* ed */ &op_sbc_absolute,
-	/* ee */ NULL,
+	/* ee */ &op_inc_absolute,
 	/* ef */ NULL,
 	/* f0 */ &op_beq,
 	/* f1 */ &op_sbc_indirect_y,
@@ -1477,7 +1781,7 @@ opfunct opcode_map[] = {
 	/* f3 */ NULL,
 	/* f4 */ NULL,
 	/* f5 */ &op_sbc_zero_x,
-	/* f6 */ NULL,
+	/* f6 */ &op_inc_zero_x,
 	/* f7 */ NULL,
 	/* f8 */ &op_sed,
 	/* f9 */ &op_sbc_absolute_y,
@@ -1485,7 +1789,7 @@ opfunct opcode_map[] = {
 	/* fb */ NULL,
 	/* fc */ NULL,
 	/* fd */ &op_sbc_absolute_x,
-	/* fe */ NULL,
+	/* fe */ &op_inc_absolute_x,
 	/* ff */ NULL,
 };
 
