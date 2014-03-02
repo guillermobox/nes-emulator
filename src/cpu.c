@@ -366,7 +366,7 @@ static void op_adc_indirect_y(void) /* page 7 MOS */
 static void op_sbc(void) /* page 14 MOS */
 {
 	byte value = cpu_memload(cpustate.PC++);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
 	cpustate.C = (sum & 0x0100) != 0x0000;
@@ -378,7 +378,7 @@ static void op_sbc_absolute(void) /* page 14 MOS */
 {
 	addr memaddr = get_address_absolute();
 	byte value = cpu_memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
 	cpustate.C = (sum & 0x0100) != 0x0000;
@@ -390,7 +390,7 @@ static void op_sbc_absolute_x(void) /* page 14 MOS */
 {
 	addr memaddr = get_address_absolute_x();
 	byte value = cpu_memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
 	cpustate.C = (sum & 0x0100) != 0x0000;
@@ -402,7 +402,7 @@ static void op_sbc_absolute_y(void) /* page 14 MOS */
 {
 	addr memaddr = get_address_absolute_y();
 	byte value = cpu_memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
 	cpustate.C = (sum & 0x0100) != 0x0000;
@@ -414,7 +414,7 @@ static void op_sbc_zero(void) /* page 14 MOS */
 {
 	addr memaddr = get_address_zero();
 	byte value = cpu_memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
 	cpustate.C = (sum & 0x0100) != 0x0000;
@@ -426,7 +426,7 @@ static void op_sbc_zero_x(void) /* page 14 MOS */
 {
 	addr memaddr = get_address_zero_x();
 	byte value = cpu_memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
 	cpustate.C = (sum & 0x0100) != 0x0000;
@@ -438,7 +438,7 @@ static void op_sbc_indirect_x(void) /* page 14 MOS */
 {
 	addr memaddr = get_address_indirect_x();
 	byte value = cpu_memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
 	cpustate.C = (sum & 0x0100) != 0x0000;
@@ -450,7 +450,7 @@ static void op_sbc_indirect_y(void) /* page 14 MOS */
 {
 	addr memaddr = get_address_indirect_y();
 	byte value = cpu_memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - cpustate.C;
+	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
 	cpustate.C = (sum & 0x0100) != 0x0000;
