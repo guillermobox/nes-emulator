@@ -189,6 +189,147 @@ static void op_bvc(void) /* page 41 MOS */
 	}
 };
 
+static void op_cmp(void) /* page 45 MOS */
+{
+	byte mem = cpu_memload(cpustate.PC++);
+	byte diff = cpustate.A - mem;
+	cpustate.C = cpustate.A >= mem;
+	cpustate.N = (diff & 0x80) != 0x00;
+	cpustate.Z = diff == 0x00;
+};
+
+static void op_cmp_zero(void) /* page 45 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = 0x00;
+	byte mem = cpu_memload(address.offset);
+	byte diff = cpustate.A - mem;
+	cpustate.C = cpustate.A >= mem;
+	cpustate.N = (diff & 0x80) != 0x00;
+	cpustate.Z = diff == 0x00;
+};
+
+static void op_cmp_zero_x(void) /* page 45 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = 0x00;
+	byte mem = cpu_memload(address.offset + (addr) cpustate.X);
+	byte diff = cpustate.A - mem;
+	cpustate.C = cpustate.A >= mem;
+	cpustate.N = (diff & 0x80) != 0x00;
+	cpustate.Z = diff == 0x00;
+};
+
+static void op_cmp_absolute(void) /* page 45 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
+	byte mem = cpu_memload(address.offset);
+	byte diff = cpustate.A - mem;
+	cpustate.C = cpustate.A >= mem;
+	cpustate.N = (diff & 0x80) != 0x00;
+	cpustate.Z = diff == 0x00;
+};
+
+static void op_cmp_absolute_x(void) /* page 45 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
+	byte mem = cpu_memload(address.offset + (addr) cpustate.X);
+	byte diff = cpustate.A - mem;
+	cpustate.C = cpustate.A >= mem;
+	cpustate.N = (diff & 0x80) != 0x00;
+	cpustate.Z = diff == 0x00;
+};
+
+static void op_cmp_absolute_y(void) /* page 45 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
+	byte mem = cpu_memload(address.offset + (addr) cpustate.Y);
+	byte diff = cpustate.A - mem;
+	cpustate.C = cpustate.A >= mem;
+	cpustate.N = (diff & 0x80) != 0x00;
+	cpustate.Z = diff == 0x00;
+};
+
+static void op_cmp_indirect_x(void) /* page 45 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	byte baseaddress = cpu_memload(cpustate.PC++) + cpustate.X;
+	address.b[0] = cpu_memload((addr)baseaddress);
+	address.b[1] = 0x00;
+	byte mem = cpu_memload(address.offset);
+	byte diff = cpustate.A - mem;
+	cpustate.C = cpustate.A >= mem;
+	cpustate.N = (diff & 0x80) != 0x00;
+	cpustate.Z = diff == 0x00;
+};
+
+static void op_cmp_indirect_y(void) /* page 45 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	byte baseaddress = cpu_memload(cpustate.PC++);
+	address.b[0] = cpu_memload((addr)baseaddress);
+	address.b[1] = cpu_memload(((addr)baseaddress) + 1);;
+	byte mem = cpu_memload(address.offset + (addr) cpustate.Y);
+	byte diff = cpustate.A - mem;
+	cpustate.C = cpustate.A >= mem;
+	cpustate.N = (diff & 0x80) != 0x00;
+	cpustate.Z = diff == 0x00;
+};
+
+static void op_bit_zero(void) /* page 47 MOS */
+{
+	byte dir = cpu_memload(cpustate.PC++);
+	byte value = cpu_memload((addr)dir);
+	byte and = cpustate.A & value;
+	cpustate.Z = and == 0x00;
+	cpustate.N = (and & 0x80) != 0x00;
+	cpustate.V = (and & 0x60) != 0x00;
+};
+
+static void op_bit_absolute(void) /* page 47 MOS */
+{
+	union {
+		byte b[2];
+		addr offset;
+	} address;
+	address.b[0] = cpu_memload(cpustate.PC++);
+	address.b[1] = cpu_memload(cpustate.PC++);
+	byte value = cpu_memload(address.offset);
+	byte and = cpustate.A & value;
+	cpustate.Z = and == 0x00;
+	cpustate.N = (and & 0x80) != 0x00;
+	cpustate.V = (and & 0x60) != 0x00;
+};
+
 /*
  * Chapter 7 of MOS
  * INDEX REGISTER INSTRUCTIONS
@@ -559,7 +700,7 @@ opfunct opcode_map[] = {
 	/* 21 */ NULL,
 	/* 22 */ NULL,
 	/* 23 */ NULL,
-	/* 24 */ NULL,
+	/* 24 */ &op_bit_zero,
 	/* 25 */ NULL,
 	/* 26 */ NULL,
 	/* 27 */ NULL,
@@ -567,7 +708,7 @@ opfunct opcode_map[] = {
 	/* 29 */ NULL,
 	/* 2a */ NULL,
 	/* 2b */ NULL,
-	/* 2c */ NULL,
+	/* 2c */ &op_bit_absolute,
 	/* 2d */ NULL,
 	/* 2e */ NULL,
 	/* 2f */ NULL,
@@ -716,35 +857,35 @@ opfunct opcode_map[] = {
 	/* be */ &op_ldx_absolute_y,
 	/* bf */ NULL,
 	/* c0 */ &op_cpy,
-	/* c1 */ NULL,
+	/* c1 */ &op_cmp_indirect_x,
 	/* c2 */ NULL,
 	/* c3 */ NULL,
 	/* c4 */ &op_cpy_zero,
-	/* c5 */ NULL,
+	/* c5 */ &op_cmp_zero,
 	/* c6 */ NULL,
 	/* c7 */ NULL,
 	/* c8 */ &op_incy,
-	/* c9 */ NULL,
+	/* c9 */ &op_cmp,
 	/* ca */ &op_dex,
 	/* cb */ NULL,
 	/* cc */ &op_cpy_absolute,
-	/* cd */ NULL,
+	/* cd */ &op_cmp_absolute,
 	/* ce */ NULL,
 	/* cf */ NULL,
 	/* d0 */ &op_bne,
-	/* d1 */ NULL,
+	/* d1 */ &op_cmp_indirect_y,
 	/* d2 */ NULL,
 	/* d3 */ NULL,
 	/* d4 */ NULL,
-	/* d5 */ NULL,
+	/* d5 */ &op_cmp_zero_x,
 	/* d6 */ NULL,
 	/* d7 */ NULL,
 	/* d8 */ NULL,
-	/* d9 */ NULL,
+	/* d9 */ &op_cmp_absolute_y,
 	/* da */ NULL,
 	/* db */ NULL,
 	/* dc */ NULL,
-	/* dd */ NULL,
+	/* dd */ &op_cmp_absolute_x,
 	/* de */ NULL,
 	/* df */ NULL,
 	/* e0 */ &op_cpx,
