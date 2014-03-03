@@ -13,10 +13,10 @@ typedef void (*opfunct)(void);
 
 /*
  * I'm mapping the addresses above 0x8000 directly onto the
- * memory bank of the application
+ * memory bank of the application.
  */
-byte memory[0x8000];
-byte * prgmem;
+byte memory[0x10000];
+byte * prgmem = memory + 0x8000;
 
 struct st_cpustate {
 	addr PC; /* program counter */
@@ -69,6 +69,10 @@ static inline void cpu_sety(byte value)
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
+/*
+ * Chapter 6 os MOS
+ * INDEX REGISTERS AND INDEX ADDRESSING CONCEPTS
+ */
 static inline addr get_address_zero()
 {
 	union {
@@ -1800,10 +1804,11 @@ void print_cpustate()
 	printf("PC: 0x%02x SP: 0x%02x A: 0x%02x X: 0x%02x Y: 0x%02x ",
 			cpustate.PC, cpustate.SP, cpustate.A,
 			cpustate.X, cpustate.Y);
-	printf("CZIDBVN: %d%d%d%d%d%d%db\n",
+	printf("CZIDBVN: %d%d%d%d%d%d%db ",
 			cpustate.C, cpustate.Z, cpustate.I,
 			cpustate.D, cpustate.B, cpustate.V,
 			cpustate.N);
+	printf("OP: %02x\n", cpu_memload(cpustate.PC));
 
 	if (cpustate.SP != 0xff) {
 		printf("Stack: ");
@@ -1818,7 +1823,6 @@ static void cpu_boot()
 	printf("Booting CPU...\n");
 	printf("Starting memory...\n");
 	memset(memory, 0, sizeof(memory));
-	prgmem = memory;
 
 	printf("Starting CPU state...\n");
 	memset(&cpustate, 0, sizeof(cpustate));
@@ -1832,9 +1836,9 @@ void cpu_init()
 	cpu_boot();
 };
 
-void cpu_load(byte *prg)
+void cpu_load(byte *prg, size_t size)
 {
-	prgmem = prg;
+	memcpy(prgmem, prg, size);
 	cpustate.PC = 0x8000;
 };
 
@@ -1846,6 +1850,7 @@ void cpu_run()
 	printf("Running program at: 0x%04x\n", cpustate.PC);
 
 	do {
+		print_cpustate();
 		/* fetch */
 		op = cpu_memload(cpustate.PC);
 

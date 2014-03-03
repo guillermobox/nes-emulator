@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "cpu.h"
 
 #define INES_E_MAGIC -1
 #define INES_E_HEADER -2
@@ -104,6 +105,8 @@ extern int read_ines(char *path)
 	printf("PRG: %02x CHR: %02x RAM: %02x CONTROL1: %02x CONTROL2: %02x\n",
 			inesdata.prgbanks, inesdata.chrbanks, inesdata.rambanks,
 			inesdata.control1, inesdata.control2);
+
+	cpu_load(PRG, prgsize);
 
 freeexit:
 	free(PRG);

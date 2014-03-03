@@ -1,6 +1,13 @@
+#ifndef _CPU_H_
+#define _CPU_H_
 
-void print_cpustate();
+#include <stdint.h>
+
+typedef uint8_t byte;
+
 void cpu_init();
-void cpu_load();
+void cpu_load(byte*, size_t);
 void cpu_run();
 void cpu_dump();
+
+#endif

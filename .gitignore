@@ -5,3 +5,5 @@ doc
 tags
 core.dump
 nes-emulator
+gmon.out
+test_*

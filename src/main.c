@@ -4,38 +4,19 @@
  * NES-Emulator
  */
 
+#include <stdint.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "ines.h"
 #include "cpu.h"
-#include <stdint.h>
 
-typedef uint8_t byte;
-
-byte prg_inc[] = {
-	0xe8, 0xc8, 0xe8, 0x00
-};
-
-byte prg_load[] = {
-	0xa2, 0xf5, 0xae, 0x00, 0x80, 0xc8, 0xc8, 0xbe, 0x00, 0x80, 0xb6, 0x01, 0x00
-};
-
-byte prg_store[] = {
-	0xa2, 0xf0, 0x86, 0x14, 0x00
-};
-
-byte prg_jump[] = {
-	0xe8, 0xe8, 0x4c, 0x06, 0x80, 0xe8, 0x00,
-};
-
-byte prg_branch[] = {
-	0xa2, 0x20, 0xc8, 0xc8, 0xc8, 0xca, 0xd0, 0xfa, 0x00,
-};
-
-byte prg_jsr[] = {
-	0xe8, 0x20, 0x05, 0x80, 0x00, 0xe8, 0x20, 0x0a, 0x80, 0x60, 0xe8, 0x60,
-};
-
-byte prg_arithmetics[] = {
-	0xa9, 0x44, 0x69, 0xf1, 0xe9, 0xf1, 0x00,
+void sig_interrupt(int sig)
+{
+	(void) sig;
+	fprintf(stderr, "Captured interrupt signal!\n");
+	cpu_dump();
+	exit(EXIT_FAILURE);
 };
 
 int main(int argc, char *argv[])
@@ -43,10 +24,12 @@ int main(int argc, char *argv[])
 	(void) argc;
 	(void) argv;
 
+	signal(SIGINT, sig_interrupt);
+
 	cpu_init();
-	cpu_load(prg_arithmetics);
+	read_ines(argv[1]);
 	cpu_run();
 	cpu_dump();
 
-	return 0;
+	return EXIT_SUCCESS;
 };
