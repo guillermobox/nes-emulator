@@ -1838,8 +1838,14 @@ void cpu_init()
 
 void cpu_load(byte *prg, size_t size)
 {
+	union {
+		byte b[2];
+		addr full;
+	} pcaddress;
 	memcpy(prgmem, prg, size);
-	cpustate.PC = 0x8000;
+	pcaddress.b[0] = cpu_memload(0xfffc);
+	pcaddress.b[1] = cpu_memload(0xfffd);
+	cpustate.PC = pcaddress.full;
 };
 
 void cpu_run()
