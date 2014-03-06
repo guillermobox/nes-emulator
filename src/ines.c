@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "cpu.h"
+#include "ppu.h"
 
 #define INES_E_MAGIC -1
 #define INES_E_HEADER -2
@@ -107,6 +108,7 @@ extern int read_ines(char *path)
 			inesdata.control1, inesdata.control2);
 
 	cpu_load(PRG, prgsize);
+	ppu_load(CHR, chrsize);
 
 freeexit:
 	free(PRG);

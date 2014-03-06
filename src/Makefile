@@ -1,5 +1,5 @@
 CFLAGS := -Wall -Wextra -fno-diagnostics-show-caret -g -pg
-LDFLAGS:= -lpthread
+LDFLAGS:= -lpthread -lSDL
 OBJ    := nes-emulator
 
 .PHONY: clean

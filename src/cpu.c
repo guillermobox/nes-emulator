@@ -1862,7 +1862,7 @@ void cpu_run()
 	printf("Running program at: 0x%04x\n", cpustate.PC);
 
 	do {
-		print_cpustate();
+//		print_cpustate();
 		/* fetch */
 		op = cpu_memload(cpustate.PC);
 
