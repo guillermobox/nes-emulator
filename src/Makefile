@@ -1,4 +1,5 @@
 CFLAGS := -Wall -Wextra -fno-diagnostics-show-caret -g -pg
+LDFLAGS:= -lpthread
 OBJ    := nes-emulator
 
 .PHONY: clean
@@ -12,7 +13,7 @@ test_cpu: test_cpu.o cpu.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 $(OBJ): main.o cpu.o ines.o ppu.o mmc.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 run: $(OBJ)
 	./$(OBJ) ../share/supermario.nes

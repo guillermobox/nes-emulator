@@ -1801,6 +1801,8 @@ void print_cpustate()
 {
 	byte off;
 
+	flockfile(stdout);
+
 	printf("PC: 0x%02x SP: 0x%02x A: 0x%02x X: 0x%02x Y: 0x%02x ",
 			cpustate.PC, cpustate.SP, cpustate.A,
 			cpustate.X, cpustate.Y);
@@ -1816,6 +1818,10 @@ void print_cpustate()
 			printf("%02x ", cpu_memload(0x0100 + off));
 		}
 	}
+	printf("\n");
+
+
+	funlockfile(stdout);
 };
 
 static void cpu_boot()
