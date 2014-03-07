@@ -24,6 +24,8 @@ struct st_cpustate {
 	byte A; /* accumulator register */
 	byte X; /* x register */
 	byte Y; /* y register */
+	byte NMI; /* non masked interrupt */
+	byte IRQ; /* maskeable interrupt */
 	union {
 		byte P; /* processor state flags */
 		struct {
@@ -1229,6 +1231,19 @@ static void op_plp(void) /* page 123 MOS */
 	cpustate.P = cpu_memload(0x0100 + ++cpustate.SP);
 };
 
+static void op_rti(void) /* page 132 MOS */
+{
+	cpustate.NMI = 0;
+	union {
+		byte b[2];
+		addr full;
+	} oldaddress;
+	oldaddress.b[1] = cpu_memload(0x0100 + ++cpustate.SP);
+	oldaddress.b[0] = cpu_memload(0x0100 + ++cpustate.SP);
+	cpustate.P = cpu_memload(0x0100 + ++cpustate.SP);
+	cpustate.PC = oldaddress.full;
+};
+
 static void op_brk(void) /* page 144 MOS */
 {
 	/* interrupt to vector IRQ address */
@@ -1603,7 +1618,7 @@ opfunct opcode_map[] = {
 	/* 3d */ &op_and_absolute_x,
 	/* 3e */ &op_rol_absolute_x,
 	/* 3f */ NULL,
-	/* 40 */ NULL,
+	/* 40 */ &op_rti,
 	/* 41 */ &op_eor_indirect_x,
 	/* 42 */ NULL,
 	/* 43 */ NULL,
@@ -1854,6 +1869,24 @@ void cpu_load(byte *prg, size_t size)
 	cpustate.PC = pcaddress.full;
 };
 
+void check_interrupts()
+{
+	if (cpustate.NMI) {
+		cpustate.NMI = 0;
+		union {
+			byte b[2];
+			addr full;
+		} pcaddress, source;
+		pcaddress.b[0] = cpu_memload(0xfffa);
+		pcaddress.b[1] = cpu_memload(0xfffb);
+		source.full = cpustate.PC;
+		cpu_memstore(0x0100 + cpustate.SP--, cpustate.P);
+		cpu_memstore(0x0100 + cpustate.SP--, source.b[0]);
+		cpu_memstore(0x0100 + cpustate.SP--, source.b[1]);
+		cpustate.PC = pcaddress.full;
+	}
+};
+
 void cpu_run()
 {
 	byte op;
@@ -1862,7 +1895,7 @@ void cpu_run()
 	printf("Running program at: 0x%04x\n", cpustate.PC);
 
 	do {
-//		print_cpustate();
+		print_cpustate();
 		/* fetch */
 		op = cpu_memload(cpustate.PC);
 
@@ -1871,6 +1904,7 @@ void cpu_run()
 		if (func == NULL) {
 			fprintf(stderr, "Unrecognized instruction: %02x\n", op);
 			fprintf(stderr, "  At position: %04x\n", cpustate.PC);
+			cpu_dump(0);
 			exit(1);
 		}
 
@@ -1879,6 +1913,8 @@ void cpu_run()
 
 		/* execute */
 		func();
+
+		check_interrupts();
 
 	} while (op != 0x00);
 	

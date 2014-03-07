@@ -13,8 +13,33 @@
 #define SCR_BPP 8
 
 typedef uint8_t byte;
+typedef uint16_t addr;
 
 SDL_Surface * screen;
+
+extern struct st_cpustate {
+	addr PC; /* program counter */
+	byte SP; /* stack counter */
+	byte A; /* accumulator register */
+	byte X; /* x register */
+	byte Y; /* y register */
+	byte NMI; /* non masked interrupt */
+	byte IRQ; /* maskeable interrupt */
+	union {
+		byte P; /* processor state flags */
+		struct {
+			byte C:1; /* carry */
+			byte Z:1; /* zero */
+			byte I:1; /* interrupt disable */
+			byte D:1; /* decimal mode (not in 2A03) */
+			byte B:1; /* break */
+			byte _unused_:1;
+			byte V:1; /* overflow */
+			byte N:1; /* negative */
+		};
+	};
+} cpustate;
+
 
 byte ppumemory[0x10000];
 
@@ -46,7 +71,6 @@ void show_sprite(byte number)
 
 	for (i=0 + number*8; i<8 + number*8; i++) {
 		for (j=0; j<8; j++) {
-			printf("%d %d %d\n", i, j, j + i*SCR_WIDTH);
 			color = ((ppumemory[i]&(1<<j))!=0x0) + 2*((ppumemory[i+0x08]&(1<<j))!=0x0);
 			color *= 75;
 			colour = SDL_MapRGB(screen->format, color, color, color);
@@ -63,7 +87,7 @@ void show_sprite(byte number)
 void ppu_run()
 {
 	//const struct timespec vblank_period = {0, 16666666};
-	const struct timespec vblank_period = {10, 16666666};
+	const struct timespec vblank_period = {2, 16666666};
 
 	while (1) {
 		int i;
@@ -72,6 +96,7 @@ void ppu_run()
 		SDL_Flip(screen);
 		printf("ppu: Vblank draw\n");
 		nanosleep(&vblank_period, NULL);
+		cpustate.NMI = 1;
 	};
 };
 
