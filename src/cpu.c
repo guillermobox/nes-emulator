@@ -17,7 +17,7 @@ typedef void (*opfunct)(void);
  */
 byte memory[0x10000];
 byte * prgmem = memory + 0x8000;
-addr address;
+addr address; /* address used for memory addressing in the functions */
 
 struct st_cpustate {
 	addr PC; /* program counter */
@@ -60,17 +60,27 @@ static inline byte memload(addr address)
 
 static void stack_push(byte data)
 {
+	memstore(0x0100 + cpustate.SP--, data);
 };
 
 static byte stack_pull()
 {
-
+	return memload(0x0100 + ++cpustate.SP);
 };
 
 /*
  * Chapter 6 os MOS
  * INDEX REGISTERS AND INDEX ADDRESSING CONCEPTS
  */
+static void imp()
+{
+};
+
+static void dir()
+{
+	address = cpustate.PC++;
+};
+
 static void zer()
 {
 	address = (addr) memload(cpustate.PC++);
@@ -86,24 +96,24 @@ static void zey()
 	address = (addr) (memload(cpustate.PC++) + cpustate.Y);
 };
 
-static void abs()
+static void aba()
 {
-	address = (addr) memload(cpustate.PC++) |
-		((addr) memload(cpustate.PC)++ << 8)
+	address =  memload(cpustate.PC++);
+	address |= memload(cpustate.PC++) << 8;
 };
 
 static void abx()
 {
-	address = (addr) memload(cpustate.PC++) |
-		((addr) memload(cpustate.PC)++ <<8) +
-		(addr) cpustate.X;
+	address = memload(cpustate.PC++);
+	address |= memload(cpustate.PC++) << 8;
+	address += cpustate.X;
 };
 
 static void aby()
 {
-	address = (addr) memload(cpustate.PC++) |
-		((addr) memload(cpustate.PC)++ <<8) +
-		(addr) cpustate.Y;
+	address = memload(cpustate.PC++);
+	address |= memload(cpustate.PC++) << 8;
+	address += cpustate.Y;
 };
 
 static void aix()
@@ -113,7 +123,24 @@ static void aix()
 
 static void aiy()
 {
-	address = memload( (addr)(memload(cpustate.PC++) + cpustate.Y));
+	address = (addr) memload(memload(cpustate.PC++)) + cpustate.Y;
+};
+
+static void rel()
+{
+	addr original = cpustate.PC + 0x01;
+	byte offset = memload(cpustate.PC++);
+	if (offset & 0x80)
+		address = (addr) (original + (0xff00 | offset));
+	else
+		address = (addr) (original + offset);
+};
+
+static void ind()
+{
+	byte low = memload(cpustate.PC++);
+	byte high = memload(cpustate.PC++);
+	address = memload(low | (high << 8));
 };
 
 /*
@@ -132,9 +159,9 @@ static void sta(void) /* page 5 MOS */
 	memstore(address, cpustate.A);
 };
 
-static void op_adc(void) /* page 7 MOS */
+static void adc(void) /* page 7 MOS */
 {
-	byte value = memload(cpustate.PC++);
+	byte value = memload(address);
 	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
@@ -143,93 +170,9 @@ static void op_adc(void) /* page 7 MOS */
 	cpustate.N = (cpustate.A & 0x80) != 0x00;
 };
 
-static void op_adc_absolute(void) /* page 7 MOS */
+static void sbc(void) /* page 14 MOS */
 {
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_adc_absolute_x(void) /* page 7 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_adc_absolute_y(void) /* page 7 MOS */
-{
-	addr memaddr = get_address_absolute_y();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_adc_zero(void) /* page 7 MOS */
-{
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_adc_zero_x(void) /* page 7 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_adc_indirect_x(void) /* page 7 MOS */
-{
-	addr memaddr = get_address_indirect_x();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_adc_indirect_y(void) /* page 7 MOS */
-{
-	addr memaddr = get_address_indirect_y();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A + (uint16_t) value + cpustate.C;
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_sbc(void) /* page 14 MOS */
-{
-	byte value = memload(cpustate.PC++);
+	byte value = memload(address);
 	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
 	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
 	cpustate.A = sum;
@@ -238,298 +181,25 @@ static void op_sbc(void) /* page 14 MOS */
 	cpustate.N = (cpustate.A & 0x80) != 0x00;
 };
 
-static void op_sbc_absolute(void) /* page 14 MOS */
+static void and(void) /* page 20 MOS */
 {
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_sbc_absolute_x(void) /* page 14 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_sbc_absolute_y(void) /* page 14 MOS */
-{
-	addr memaddr = get_address_absolute_y();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_sbc_zero(void) /* page 14 MOS */
-{
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_sbc_zero_x(void) /* page 14 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_sbc_indirect_x(void) /* page 14 MOS */
-{
-	addr memaddr = get_address_indirect_x();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_sbc_indirect_y(void) /* page 14 MOS */
-{
-	addr memaddr = get_address_indirect_y();
-	byte value = memload(memaddr);
-	uint16_t sum = (uint16_t) cpustate.A - (uint16_t) value - (1 - cpustate.C);
-	cpustate.V = (((cpustate.A ^ value) & 0x80) == 0x00) && ((sum & 0x80) != (value & 0x80));
-	cpustate.A = sum;
-	cpustate.C = (sum & 0x0100) != 0x0000;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_and(void) /* page 20 MOS */
-{
-	byte value = memload(cpustate.PC++);
+	byte value = memload(address);
 	cpustate.A &= value;
 	cpustate.Z = cpustate.A == 0x00;
 	cpustate.N = (cpustate.A & 0x80) != 0x00;
 };
 
-static void op_and_absolute(void) /* page 20 MOS */
+static void ora(void) /* page 21 MOS */
 {
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	cpustate.A &= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_and_absolute_x(void) /* page 20 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	cpustate.A &= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_and_absolute_y(void) /* page 20 MOS */
-{
-	addr memaddr = get_address_absolute_y();
-	byte value = memload(memaddr);
-	cpustate.A &= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_and_zero(void) /* page 20 MOS */
-{
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
-	cpustate.A &= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_and_zero_x(void) /* page 20 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	cpustate.A &= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_and_indirect_x(void) /* page 20 MOS */
-{
-	addr memaddr = get_address_indirect_x();
-	byte value = memload(memaddr);
-	cpustate.A &= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_and_indirect_y(void) /* page 20 MOS */
-{
-	addr memaddr = get_address_indirect_y();
-	byte value = memload(memaddr);
-	cpustate.A &= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_ora(void) /* page 21 MOS */
-{
-	byte value = memload(cpustate.PC++);
+	byte value = memload(address);
 	cpustate.A |= value;
 	cpustate.Z = cpustate.A == 0x00;
 	cpustate.N = (cpustate.A & 0x80) != 0x00;
 };
 
-static void op_ora_absolute(void) /* page 21 MOS */
+static void eor(void) /* page 21 MOS */
 {
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	cpustate.A |= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_ora_absolute_x(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	cpustate.A |= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_ora_absolute_y(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_absolute_y();
-	byte value = memload(memaddr);
-	cpustate.A |= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_ora_zero(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
-	cpustate.A |= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_ora_zero_x(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	cpustate.A |= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_ora_indirect_x(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_indirect_x();
-	byte value = memload(memaddr);
-	cpustate.A |= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_ora_indirect_y(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_indirect_y();
-	byte value = memload(memaddr);
-	cpustate.A |= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_eor(void) /* page 21 MOS */
-{
-	byte value = memload(cpustate.PC++);
-	cpustate.A ^= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_eor_absolute(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	cpustate.A ^= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_eor_absolute_x(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	cpustate.A ^= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_eor_absolute_y(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_absolute_y();
-	byte value = memload(memaddr);
-	cpustate.A ^= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_eor_zero(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
-	cpustate.A ^= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_eor_zero_x(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	cpustate.A ^= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_eor_indirect_x(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_indirect_x();
-	byte value = memload(memaddr);
-	cpustate.A ^= value;
-	cpustate.Z = cpustate.A == 0x00;
-	cpustate.N = (cpustate.A & 0x80) != 0x00;
-};
-
-static void op_eor_indirect_y(void) /* page 21 MOS */
-{
-	addr memaddr = get_address_indirect_y();
-	byte value = memload(memaddr);
+	byte value = memload(address);
 	cpustate.A ^= value;
 	cpustate.Z = cpustate.A == 0x00;
 	cpustate.N = (cpustate.A & 0x80) != 0x00;
@@ -540,37 +210,37 @@ static void op_eor_indirect_y(void) /* page 21 MOS */
  * Chapter 3 of MOS
  * CONCEPTS OF FLAGS AND STATUS REGISTER
  */
-static void op_sec(void) /* page 24 MOS */
+static void sec(void) /* page 24 MOS */
 {
 	cpustate.C = 1;
 };
 
-static void op_clc(void) /* page 25 MOS */
+static void clc(void) /* page 25 MOS */
 {
 	cpustate.C = 0;
 };
 
-static void op_sei(void) /* page 26 MOS */
+static void sei(void) /* page 26 MOS */
 {
 	cpustate.I = 1;
 };
 
-static void op_cli(void) /* page 26 MOS */
+static void cli(void) /* page 26 MOS */
 {
 	cpustate.I = 0;
 };
 
-static void op_sed(void) /* page 26 MOS */
+static void sed(void) /* page 26 MOS */
 {
 	cpustate.D = 1;
 };
 
-static void op_cld(void) /* page 27 MOS */
+static void cld(void) /* page 27 MOS */
 {
 	cpustate.D = 0;
 };
 
-static void op_clv(void) /* page 28 MOS */
+static void clv(void) /* page 28 MOS */
 {
 	cpustate.V = 0;
 };
@@ -579,215 +249,79 @@ static void op_clv(void) /* page 28 MOS */
  * Chapter 4 of MOS
  * TEST BRANCH AND JUMP INSTRUCTIONS
  */
-static void op_jmp(void) /* page 36 MOS */
+static void jmp(void) /* page 36 MOS */
 {
-	union {
-		byte b[2];
-		addr offset;
-	} address;
-	address.b[0] = memload(cpustate.PC++);
-	address.b[1] = memload(cpustate.PC++);
-	cpustate.PC = address.offset;
+	cpustate.PC = address;
 };
 
-static void op_jmp_indirect(void) /* page 36 MOS */
+static void bmi(void) /* page 40 MOS */
 {
-	union {
-		byte b[2];
-		addr offset;
-	} address;
-	address.b[0] = memload(cpustate.PC++);
-	address.b[1] = memload(cpustate.PC++);
-	union {
-		byte b[2];
-		addr offset;
-	} newpc;
-	newpc.b[0] = memload(address.offset);
-	newpc.b[1] = memload(address.offset + 1);
-	cpustate.PC = newpc.offset;
-};
-
-static void op_bmi(void) /* page 40 MOS */
-{
-	byte diff = memload(cpustate.PC++);
 	if (cpustate.N) {
-		if (diff & 0x80)
-			cpustate.PC -= (diff ^ 0xff) + 0x01;
-		else
-			cpustate.PC += diff;
+		cpustate.PC = address;
 	}
 };
 
-static void op_bpl(void) /* page 40 MOS */
+static void bpl(void) /* page 40 MOS */
 {
-	byte diff = memload(cpustate.PC++);
 	if (cpustate.N == 0) {
-		if (diff & 0x80)
-			cpustate.PC -= (diff ^ 0xff) + 0x01;
-		else
-			cpustate.PC += diff;
+		cpustate.PC = address;
 	}
 };
 
-static void op_bcc(void) /* page 40 MOS */
+static void bcc(void) /* page 40 MOS */
 {
-	byte diff = memload(cpustate.PC++);
 	if (cpustate.C == 0) {
-		if (diff & 0x80)
-			cpustate.PC -= (diff ^ 0xff) + 0x01;
-		else
-			cpustate.PC += diff;
+		cpustate.PC = address;
 	}
 };
 
-static void op_bcs(void) /* page 40 MOS */
+static void bcs(void) /* page 40 MOS */
 {
-	byte diff = memload(cpustate.PC++);
 	if (cpustate.C) {
-		if (diff & 0x80)
-			cpustate.PC -= (diff ^ 0xff) + 0x01;
-		else
-			cpustate.PC += diff;
+		cpustate.PC = address;
 	}
 };
 
-static void op_beq(void) /* page 41 MOS */
+static void beq(void) /* page 41 MOS */
 {
-	byte diff = memload(cpustate.PC++);
 	if (cpustate.Z) {
-		if (diff & 0x80)
-			cpustate.PC -= (diff ^ 0xff) + 0x01;
-		else
-			cpustate.PC += diff;
+		cpustate.PC = address;
 	}
 };
 
-static void op_bne(void) /* page 41 MOS */
+static void bne(void) /* page 41 MOS */
 {
-	byte diff = memload(cpustate.PC++);
 	if (cpustate.Z == 0) {
-		if (diff & 0x80)
-			cpustate.PC -= (diff ^ 0xff) + 0x01;
-		else
-			cpustate.PC += diff;
+		cpustate.PC = address;
 	}
 };
 
-static void op_bvs(void) /* page 41 MOS */
+static void bvs(void) /* page 41 MOS */
 {
-	byte diff = memload(cpustate.PC++);
 	if (cpustate.V) {
-		if (diff & 0x80)
-			cpustate.PC -= (diff ^ 0xff) + 0x01;
-		else
-			cpustate.PC += diff;
+		cpustate.PC = address;
 	}
 };
 
-static void op_bvc(void) /* page 41 MOS */
+static void bvc(void) /* page 41 MOS */
 {
-	byte diff = memload(cpustate.PC++);
 	if (cpustate.V == 0) {
-		if (diff & 0x80)
-			cpustate.PC -= (diff ^ 0xff) + 0x01;
-		else
-			cpustate.PC += diff;
+		cpustate.PC = address;
 	}
 };
 
-static void op_cmp(void) /* page 45 MOS */
+static void cmp(void) /* page 45 MOS */
 {
-	byte mem = memload(cpustate.PC++);
+	byte mem = memload(address);
 	byte diff = cpustate.A - mem;
 	cpustate.C = cpustate.A >= mem;
 	cpustate.N = (diff & 0x80) != 0x00;
 	cpustate.Z = diff == 0x00;
 };
 
-static void op_cmp_zero(void) /* page 45 MOS */
+static void bit(void) /* page 47 MOS */
 {
-	addr memaddr = get_address_zero();
-	byte mem = memload(memaddr);
-	byte diff = cpustate.A - mem;
-	cpustate.C = cpustate.A >= mem;
-	cpustate.N = (diff & 0x80) != 0x00;
-	cpustate.Z = diff == 0x00;
-};
-
-static void op_cmp_zero_x(void) /* page 45 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte mem = memload(memaddr);
-	byte diff = cpustate.A - mem;
-	cpustate.C = cpustate.A >= mem;
-	cpustate.N = (diff & 0x80) != 0x00;
-	cpustate.Z = diff == 0x00;
-};
-
-static void op_cmp_absolute(void) /* page 45 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte mem = memload(memaddr);
-	byte diff = cpustate.A - mem;
-	cpustate.C = cpustate.A >= mem;
-	cpustate.N = (diff & 0x80) != 0x00;
-	cpustate.Z = diff == 0x00;
-};
-
-static void op_cmp_absolute_x(void) /* page 45 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte mem = memload(memaddr);
-	byte diff = cpustate.A - mem;
-	cpustate.C = cpustate.A >= mem;
-	cpustate.N = (diff & 0x80) != 0x00;
-	cpustate.Z = diff == 0x00;
-};
-
-static void op_cmp_absolute_y(void) /* page 45 MOS */
-{
-	addr memaddr = get_address_absolute_y();
-	byte mem = memload(memaddr);
-	byte diff = cpustate.A - mem;
-	cpustate.C = cpustate.A >= mem;
-	cpustate.N = (diff & 0x80) != 0x00;
-	cpustate.Z = diff == 0x00;
-};
-
-static void op_cmp_indirect_x(void) /* page 45 MOS */
-{
-	addr memaddr = get_address_indirect_x();
-	byte mem = memload(memaddr);
-	byte diff = cpustate.A - mem;
-	cpustate.C = cpustate.A >= mem;
-	cpustate.N = (diff & 0x80) != 0x00;
-	cpustate.Z = diff == 0x00;
-};
-
-static void op_cmp_indirect_y(void) /* page 45 MOS */
-{
-	addr memaddr = get_address_indirect_y();
-	byte mem = memload(memaddr);
-	byte diff = cpustate.A - mem;
-	cpustate.C = cpustate.A >= mem;
-	cpustate.N = (diff & 0x80) != 0x00;
-	cpustate.Z = diff == 0x00;
-};
-
-static void op_bit_zero(void) /* page 47 MOS */
-{
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
-	byte and = cpustate.A & value;
-	cpustate.Z = and == 0x00;
-	cpustate.N = (and & 0x80) != 0x00;
-	cpustate.V = (and & 0x60) != 0x00;
-};
-
-static void op_bit_absolute(void) /* page 47 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
+	byte value = memload(address);
 	byte and = cpustate.A & value;
 	cpustate.Z = and == 0x00;
 	cpustate.N = (and & 0x80) != 0x00;
@@ -798,228 +332,98 @@ static void op_bit_absolute(void) /* page 47 MOS */
  * Chapter 7 of MOS
  * INDEX REGISTER INSTRUCTIONS
  */
-static void op_ldx(void) /* page 96 MOS */
+static void ldx(void) /* page 96 MOS */
 {
-	cpustate.X = memload(cpustate.PC++);
+	cpustate.X = memload(address);
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-static void op_ldx_absolute(void) /* page 96 MOS */
+static void ldy(void) /* page 96 MOS */
 {
-	addr memaddr = get_address_absolute();
-	cpustate.X = memload(memaddr);
-	cpustate.N = (cpustate.X & 0x80) != 0;
-	cpustate.Z = (cpustate.X == 0x00);
-};
-
-static void op_ldx_zero(void) /* page 96 MOS */
-{
-	addr memaddr = get_address_zero();
-	cpustate.X = memload(memaddr);
-	cpustate.N = (cpustate.X & 0x80) != 0;
-	cpustate.Z = (cpustate.X == 0x00);
-};
-
-static void op_ldx_absolute_y(void) /* page 96 MOS */
-{
-	addr memaddr = get_address_absolute_y();
-	cpustate.X = memload(memaddr);
-	cpustate.N = (cpustate.X & 0x80) != 0;
-	cpustate.Z = (cpustate.X == 0x00);
-};
-
-static void op_ldx_zero_y(void) /* page 96 MOS */
-{
-	addr memaddr = get_address_zero_y();
-	cpustate.X = memload(memaddr);
-	cpustate.N = (cpustate.X & 0x80) != 0;
-	cpustate.Z = (cpustate.X == 0x00);
-};
-
-static void op_ldy(void) /* page 96 MOS */
-{
-	cpustate.Y = memload(cpustate.PC++);
+	cpustate.Y = memload(address);
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-static void op_ldy_absolute(void) /* page 96 MOS */
+static void stx(void) /* page 97 MOS */
 {
-	addr memaddr = get_address_absolute();
-	cpustate.Y = memload(memaddr);
-	cpustate.N = (cpustate.Y & 0x80) != 0;
-	cpustate.Z = (cpustate.Y == 0x00);
+	memstore(address, cpustate.X);
 };
 
-static void op_ldy_zero(void) /* page 96 MOS */
+static void sty(void) /* page 97 MOS */
 {
-	addr memaddr = get_address_zero();
-	cpustate.Y = memload(memaddr);
-	cpustate.N = (cpustate.Y & 0x80) != 0;
-	cpustate.Z = (cpustate.Y == 0x00);
+	memstore(address, cpustate.Y);
 };
 
-static void op_ldy_absolute_x(void) /* page 96 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	cpustate.Y = memload(memaddr);
-	cpustate.N = (cpustate.Y & 0x80) != 0;
-	cpustate.Z = (cpustate.Y == 0x00);
-};
-
-static void op_ldy_zero_x(void) /* page 96 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	cpustate.Y = memload(memaddr);
-	cpustate.N = (cpustate.Y & 0x80) != 0;
-	cpustate.Z = (cpustate.Y == 0x00);
-};
-
-static void op_stx_absolute(void) /* page 97 MOS */
-{
-	addr memaddr = get_address_absolute();
-	memstore(memaddr, cpustate.X);
-};
-
-static void op_stx_zero(void) /* page 97 MOS */
-{
-	addr memaddr = get_address_zero();
-	memstore(memaddr, cpustate.X);
-};
-
-static void op_stx_zero_y(void) /* page 97 MOS */
-{
-	addr memaddr = get_address_zero_y();
-	memstore(memaddr, cpustate.X);
-};
-
-static void op_sty_absolute(void) /* page 97 MOS */
-{
-	addr memaddr = get_address_absolute();
-	memstore(memaddr, cpustate.Y);
-};
-
-static void op_sty_zero(void) /* page 97 MOS */
-{
-	addr memaddr = get_address_zero();
-	memstore(memaddr, cpustate.Y);
-};
-
-static void op_sty_zero_x(void) /* page 97 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	memstore(memaddr, cpustate.Y);
-};
-
-static void op_incx(void) /* page 97 MOS */
+static void inx(void) /* page 97 MOS */
 {
 	cpustate.X += 0x01;
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-static void op_incy(void) /* page 97 MOS */
+static void iny(void) /* page 97 MOS */
 {
 	cpustate.Y += 0x01;
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-static void op_dex(void) /* page 98 MOS */
+static void dex(void) /* page 98 MOS */
 {
 	cpustate.X -= 0x01;
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-static void op_dey(void) /* page 98 MOS */
+static void dey(void) /* page 98 MOS */
 {
 	cpustate.Y -= 0x01;
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-static void op_cpx(void) /* page 99 MOS */
+static void cpx(void) /* page 99 MOS */
 {
-	byte value = memload(cpustate.PC++);
+	byte value = memload(address);
 	byte sub = cpustate.X - value;
 	cpustate.Z = sub == 0x00;
 	cpustate.N = (sub & 0x80) != 0;
 	cpustate.C = cpustate.X > value;
 };
 
-static void op_cpx_zero(void) /* page 99 MOS */
+static void cpy(void) /* page 99 MOS */
 {
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
-	byte sub = cpustate.X - value;
-	cpustate.Z = sub == 0x00;
-	cpustate.N = (sub & 0x80) != 0;
-	cpustate.C = cpustate.X > value;
-};
-
-static void op_cpx_absolute(void) /* page 99 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	byte sub = cpustate.X - value;
-	cpustate.Z = sub == 0x00;
-	cpustate.N = (sub & 0x80) != 0;
-	cpustate.C = cpustate.X > value;
-};
-
-static void op_cpy(void) /* page 99 MOS */
-{
-	byte value = memload(cpustate.PC++);
+	byte value = memload(address);
 	byte sub = cpustate.Y - value;
 	cpustate.Z = sub == 0x00;
 	cpustate.N = (sub & 0x80) != 0;
 	cpustate.C = cpustate.Y > value;
 };
 
-static void op_cpy_zero(void) /* page 99 MOS */
-{
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
-	byte sub = cpustate.Y - value;
-	cpustate.Z = sub == 0x00;
-	cpustate.N = (sub & 0x80) != 0;
-	cpustate.C = cpustate.Y > value;
-};
-
-static void op_cpy_absolute(void) /* page 99 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	byte sub = cpustate.Y - value;
-	cpustate.Z = sub == 0x00;
-	cpustate.N = (sub & 0x80) != 0;
-	cpustate.C = cpustate.Y > value;
-};
-
-static void op_tax(void) /* page 100 MOS */
+static void tax(void) /* page 100 MOS */
 {
 	cpustate.X = cpustate.A;
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-static void op_tay(void) /* page 101 MOS */
+static void tay(void) /* page 101 MOS */
 {
 	cpustate.Y = cpustate.A;
 	cpustate.N = (cpustate.Y & 0x80) != 0;
 	cpustate.Z = (cpustate.Y == 0x00);
 };
 
-static void op_txa(void) /* page 100 MOS */
+static void txa(void) /* page 100 MOS */
 {
 	cpustate.A = cpustate.X;
 	cpustate.N = (cpustate.X & 0x80) != 0;
 	cpustate.Z = (cpustate.X == 0x00);
 };
 
-static void op_tya(void) /* page 101 MOS */
+static void tya(void) /* page 101 MOS */
 {
 	cpustate.A = cpustate.Y;
 	cpustate.N = (cpustate.Y & 0x80) != 0;
@@ -1030,79 +434,59 @@ static void op_tya(void) /* page 101 MOS */
  * Chapter 8 of MOS
  * STACK PROCESSING
  */
-static void op_jsr(void) /* page 106 MOS */
+static void jsr(void) /* page 106 MOS */
 {
-	union {
-		byte b[2];
-		addr offset;
-	} destination, source;
-	destination.b[0] = memload(cpustate.PC++);
-	destination.b[1] = memload(cpustate.PC++);
-	source.offset = cpustate.PC;
-	memstore(0x0100 + cpustate.SP--, source.b[0]);
-	memstore(0x0100 + cpustate.SP--, source.b[1]);
-	cpustate.PC = destination.offset;
+	stack_push((byte) cpustate.PC);
+	stack_push((byte) (cpustate.PC >> 8));
+	cpustate.PC = address;
 };
 
-static void op_rts(void) /* page 108 MOS */
+static void rts(void) /* page 108 MOS */
 {
-	union {
-		byte b[2];
-		addr offset;
-	} source;
-	source.b[1] = memload(0x0100 + ++cpustate.SP);
-	source.b[0] = memload(0x0100 + ++cpustate.SP);
-	cpustate.PC = source.offset;
+	cpustate.PC = ((addr) stack_pull() << 8) | (addr) stack_pull();
 };
 
-static void op_pha(void) /* page 117 MOS */
+static void pha(void) /* page 117 MOS */
 {
-	memstore(0x0100 + cpustate.SP--, cpustate.A);
+	stack_push(cpustate.A);
 };
 
-static void op_pla(void) /* page 118 MOS */
+static void pla(void) /* page 118 MOS */
 {
-	cpustate.A = memload(0x0100 + ++cpustate.SP);
+	cpustate.A = stack_pull();
 	cpustate.Z = cpustate.A == 0x00;
 	cpustate.N = (cpustate.A & 0x80) != 0x00;
 };
 
-static void op_txs(void) /* page 120 MOS */
+static void txs(void) /* page 120 MOS */
 {
-	memstore(0x0100 + cpustate.SP--, cpustate.X);
+	stack_push(cpustate.X);
 };
 
-static void op_tsx(void) /* page 122 MOS */
+static void tsx(void) /* page 122 MOS */
 {
-	cpustate.X = memload(0x0100 + ++cpustate.SP);
+	cpustate.X = stack_pull();
 	cpustate.Z = cpustate.X == 0x00;
 	cpustate.N = (cpustate.X & 0x80) != 0x00;
 };
 
-static void op_php(void) /* page 122 MOS */
+static void php(void) /* page 122 MOS */
 {
-	memstore(0x0100 + cpustate.SP--, cpustate.P);
+	stack_push(cpustate.P);
 };
 
-static void op_plp(void) /* page 123 MOS */
+static void plp(void) /* page 123 MOS */
 {
-	cpustate.P = memload(0x0100 + ++cpustate.SP);
+	cpustate.P = stack_pull();
 };
 
-static void op_rti(void) /* page 132 MOS */
+static void rti(void) /* page 132 MOS */
 {
-	cpustate.NMI = 0;
-	union {
-		byte b[2];
-		addr full;
-	} oldaddress;
-	oldaddress.b[1] = memload(0x0100 + ++cpustate.SP);
-	oldaddress.b[0] = memload(0x0100 + ++cpustate.SP);
-	cpustate.P = memload(0x0100 + ++cpustate.SP);
-	cpustate.PC = oldaddress.full;
+	cpustate.PC = stack_pull() << 8 | stack_pull();
+	cpustate.P = stack_pull();
 };
 
-static void op_brk(void) /* page 144 MOS */
+static void brk(void) /* page 144 MOS */
 {
 	/* interrupt to vector IRQ address */
 };
@@ -1111,7 +495,7 @@ static void op_brk(void) /* page 144 MOS */
  * Chapter 10
  * SHIFT AND MEMORY MODIFY INSTRUCTIONS
  */
-static void op_lsr(void) /* page 148 MOS */
+static void lsra(void) /* page 148 MOS */
 {
 	cpustate.C = cpustate.A & 0x01;
 	cpustate.A >>= 1;
@@ -1119,51 +503,17 @@ static void op_lsr(void) /* page 148 MOS */
 	cpustate.Z = cpustate.A != 0x00;
 };
 
-static void op_lsr_zero(void) /* page 148 MOS */
+static void lsr(void) /* page 148 MOS */
 {
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
+	byte value = memload(address);
 	cpustate.C = value & 0x01;
 	value >>= 1;
 	cpustate.N = 0;
 	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
+	memstore(address, value);
 };
 
-static void op_lsr_zero_x(void) /* page 148 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	cpustate.C = value & 0x01;
-	value >>= 1;
-	cpustate.N = 0;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_lsr_absolute(void) /* page 148 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	value >>= 1;
-	cpustate.C = value & 0x01;
-	cpustate.N = 0;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_lsr_absolute_x(void) /* page 148 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	value >>= 1;
-	cpustate.C = value & 0x01;
-	cpustate.N = 0;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_asl(void) /* page 149 MOS */
+static void asla(void) /* page 149 MOS */
 {
 	cpustate.C = (cpustate.A & 0x80) != 0x00;
 	cpustate.A <<= 1;
@@ -1171,51 +521,17 @@ static void op_asl(void) /* page 149 MOS */
 	cpustate.Z = cpustate.A != 0x00;
 };
 
-static void op_asl_zero(void) /* page 149 MOS */
+static void asl(void) /* page 149 MOS */
 {
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
+	byte value = memload(address);
 	cpustate.C = (value & 0x80) != 0x00;
 	value <<= 1;
 	cpustate.N = (value & 0x80) != 0x00;
 	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
+	memstore(address, value);
 };
 
-static void op_asl_zero_x(void) /* page 149 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	cpustate.C = (value & 0x80) != 0x00;
-	value <<= 1;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_asl_absolute(void) /* page 149 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	cpustate.C = (value & 0x80) != 0x00;
-	value <<= 1;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_asl_absolute_x(void) /* page 149 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	cpustate.C = (value & 0x80) != 0x00;
-	value <<= 1;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_rol(void) /* page 149 MOS */
+static void rola(void) /* page 149 MOS */
 {
 	byte oldc = cpustate.C;
 	cpustate.C = (cpustate.A & 0x80) != 0x00;
@@ -1225,59 +541,19 @@ static void op_rol(void) /* page 149 MOS */
 	cpustate.Z = cpustate.A != 0x00;
 };
 
-static void op_rol_zero(void) /* page 149 MOS */
+static void rol(void) /* page 149 MOS */
 {
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
+	byte value = memload(address);
 	byte oldc = cpustate.C;
 	cpustate.C = (value & 0x80) != 0x00;
 	value <<= 1;
 	value += oldc;
 	cpustate.N = (value & 0x80) != 0x00;
 	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
+	memstore(address, value);
 };
 
-static void op_rol_zero_x(void) /* page 149 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	byte oldc = cpustate.C;
-	cpustate.C = (value & 0x80) != 0x00;
-	value <<= 1;
-	value += oldc;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_rol_absolute(void) /* page 149 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	byte oldc = cpustate.C;
-	cpustate.C = (value & 0x80) != 0x00;
-	value <<= 1;
-	value += oldc;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_rol_absolute_x(void) /* page 149 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	byte oldc = cpustate.C;
-	cpustate.C = (value & 0x80) != 0x00;
-	value <<= 1;
-	value += oldc;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_ror(void) /* page 150 MOS */
+static void rora(void) /* page 150 MOS */
 {
 	byte oldc = cpustate.C;
 	cpustate.C = cpustate.A & 0x01;
@@ -1287,170 +563,78 @@ static void op_ror(void) /* page 150 MOS */
 	cpustate.Z = cpustate.A != 0x00;
 };
 
-static void op_ror_zero(void) /* page 149 MOS */
+static void ror(void) /* page 149 MOS */
 {
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr);
+	byte value = memload(address);
 	byte oldc = cpustate.C;
 	cpustate.C = value & 0x01;
 	value >>= 1;
 	value += 0x80 & oldc;
 	cpustate.N = (value & 0x80) != 0x00;
 	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
+	memstore(address, value);
 };
 
-static void op_ror_zero_x(void) /* page 149 MOS */
+static void inc(void) /* page 155 MOS */
 {
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr);
-	byte oldc = cpustate.C;
-	cpustate.C = value & 0x01;
-	value >>= 1;
-	value += 0x80 & oldc;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_ror_absolute(void) /* page 149 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr);
-	byte oldc = cpustate.C;
-	cpustate.C = value & 0x01;
-	value >>= 1;
-	value += 0x80 & oldc;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_ror_absolute_x(void) /* page 149 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr);
-	byte oldc = cpustate.C;
-	cpustate.C = value & 0x01;
-	value >>= 1;
-	value += 0x80 & oldc;
-	cpustate.N = (value & 0x80) != 0x00;
-	cpustate.Z = value != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_inc_absolute(void) /* page 155 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr) + 1;
+	byte value = memload(address) + 1;
 	cpustate.Z = value == 0x00;
 	cpustate.N = (value & 0x80) != 0x00;
-	memstore(memaddr, value);
+	memstore(address, value);
 };
 
-static void op_inc_absolute_x(void) /* page 155 MOS */
+static void dec(void) /* page 155 MOS */
 {
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr) + 1;
+	byte value = memload(address) - 1;
 	cpustate.Z = value == 0x00;
 	cpustate.N = (value & 0x80) != 0x00;
-	memstore(memaddr, value);
+	memstore(address, value);
 };
 
-static void op_inc_zero(void) /* page 155 MOS */
+static void nop(void)
 {
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr) + 1;
-	cpustate.Z = value == 0x00;
-	cpustate.N = (value & 0x80) != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_inc_zero_x(void) /* page 155 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr) + 1;
-	cpustate.Z = value == 0x00;
-	cpustate.N = (value & 0x80) != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_dec_absolute(void) /* page 155 MOS */
-{
-	addr memaddr = get_address_absolute();
-	byte value = memload(memaddr) - 1;
-	cpustate.Z = value == 0x00;
-	cpustate.N = (value & 0x80) != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_dec_absolute_x(void) /* page 155 MOS */
-{
-	addr memaddr = get_address_absolute_x();
-	byte value = memload(memaddr) - 1;
-	cpustate.Z = value == 0x00;
-	cpustate.N = (value & 0x80) != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_dec_zero(void) /* page 155 MOS */
-{
-	addr memaddr = get_address_zero();
-	byte value = memload(memaddr) - 1;
-	cpustate.Z = value == 0x00;
-	cpustate.N = (value & 0x80) != 0x00;
-	memstore(memaddr, value);
-};
-
-static void op_dec_zero_x(void) /* page 155 MOS */
-{
-	addr memaddr = get_address_zero_x();
-	byte value = memload(memaddr) - 1;
-	cpustate.Z = value == 0x00;
-	cpustate.N = (value & 0x80) != 0x00;
-	memstore(memaddr, value);
 };
 
 #define NUL NULL
 
 opfunct addressing_map[] = {
        /* 0   1    2    3    4    5    6    7    8    9    a    b    c    d    e    f  */
-/* 0 */ imp, inx, NUL, NUL, NUL, zer, zer, NUL, imp, imp, imp, NUL, NUL, abs, abs, NUL,
-/* 1 */
-/* 2 */
-/* 3 */
-/* 4 */
-/* 5 */
-/* 6 */
-/* 7 */
-/* 8 */
-/* 9 */
-/* a */
-/* b */
-/* c */
-/* d */
-/* e */
-/* f */
+/* 0 */ imp, aix, NUL, NUL, NUL, zer, zer, NUL, imp, dir, imp, NUL, NUL, aba, aba, NUL,
+/* 1 */ rel, aiy, NUL, NUL, NUL, zex, zex, NUL, imp, aby, NUL, NUL, NUL, abx, abx, NUL,
+/* 2 */ aba, aix, NUL, NUL, zer, zer, zer, NUL, imp, dir, imp, NUL, aba, aba, aba, NUL,
+/* 3 */ rel, aiy, NUL, NUL, NUL, zex, zex, NUL, imp, aby, NUL, NUL, NUL, abx, abx, NUL,
+/* 4 */ imp, aix, NUL, NUL, NUL, zer, zer, NUL, imp, dir, imp, NUL, aba, aba, aba, NUL,
+/* 5 */ rel, aiy, NUL, NUL, NUL, zex, zex, NUL, imp, aby, NUL, NUL, NUL, abx, abx, NUL,
+/* 6 */ imp, aix, NUL, NUL, NUL, zer, zer, NUL, imp, dir, imp, NUL, ind, aba, aba, NUL,
+/* 7 */ rel, aiy, NUL, NUL, NUL, zex, zex, NUL, imp, aby, NUL, NUL, NUL, abx, abx, NUL,
+/* 8 */ NUL, aix, NUL, NUL, zer, zer, zer, NUL, imp, NUL, imp, NUL, aba, aba, aba, NUL,
+/* 9 */ rel, aiy, NUL, NUL, zex, zex, zey, NUL, imp, aby, imp, NUL, NUL, aba, NUL, NUL,
+/* a */ dir, aix, dir, NUL, zer, zer, zer, NUL, imp, dir, imp, NUL, aba, aba, aba, NUL,
+/* b */ rel, aiy, NUL, NUL, zex, zex, zey, NUL, imp, aby, imp, NUL, abx, abx, aby, NUL,
+/* c */ dir, aix, NUL, NUL, zer, zer, zer, NUL, imp, dir, imp, NUL, aba, aba, aba, NUL,
+/* d */ rel, aiy, NUL, NUL, NUL, zex, zex, NUL, imp, aby, NUL, NUL, NUL, abx, abx, NUL,
+/* e */ dir, aix, NUL, NUL, zer, zer, zer, NUL, imp, dir, imp, NUL, aba, aba, aba, NUL,
+/* f */ rel, aiy, NUL, NUL, NUL, zex, zex, NUL, imp, aby, NUL, NUL, NUL, abx, abx, NUL,
 };
 
 opfunct instruction_map[] = {
        /* 0   1    2    3    4    5    6    7    8    9    a    b    c    d    e    f  */
-/* 0 */ brk, ora, NUL, NUL, NUL, ora, asl, NUL, php, ora, asl, NUL, NUL, ora, asl, NUL,
-/* 1 */
-/* 2 */
-/* 3 */
-/* 4 */
-/* 5 */
-/* 6 */
-/* 7 */
-/* 8 */
-/* 9 */
-/* a */
-/* b */
-/* c */
-/* d */
-/* e */
-/* f */
+/* 0 */ brk, ora, NUL, NUL, NUL, ora, asl, NUL, php, ora,asla, NUL, NUL, ora, asl, NUL,
+/* 1 */ bpl, ora, NUL, NUL, NUL, ora, asl, NUL, clc, ora, NUL, NUL, NUL, ora, asl, NUL,
+/* 2 */ jsr, and, NUL, NUL, bit, and, rol, NUL, plp, and,rola, NUL, bit, and, rol, NUL,
+/* 3 */ bmi, and, NUL, NUL, NUL, and, rol, NUL, sec, and, NUL, NUL, NUL, and, rol, NUL,
+/* 4 */ rti, eor, NUL, NUL, NUL, eor, lsr, NUL, pha, eor,lsra, NUL, jmp, eor, lsr, NUL,
+/* 5 */ bvc, eor, NUL, NUL, NUL, eor, lsr, NUL, cli, eor, NUL, NUL, NUL, eor, lsr, NUL,
+/* 6 */ rts, adc, NUL, NUL, NUL, adc, ror, NUL, pla, adc,rora, NUL, jmp, adc, ror, NUL,
+/* 7 */ bvs, adc, NUL, NUL, NUL, adc, ror, NUL, sei, adc, NUL, NUL, NUL, adc, ror, NUL,
+/* 8 */ NUL, sta, NUL, NUL, sty, sta, stx, NUL, dey, NUL, txa, NUL, sty, sta, stx, NUL,
+/* 9 */ bcc, sta, NUL, NUL, sty, sta, stx, NUL, tya, sta, txs, NUL, NUL, sta, NUL, NUL, 
+/* a */ ldy, lda, ldx, NUL, ldy, lda, ldx, NUL, tay, lda, tax, NUL, ldy, lda, ldx, NUL,
+/* b */ bcs, lda, NUL, NUL, ldy, lda, ldx, NUL, clv, lda, tsx, NUL, ldy, lda, ldx, NUL,
+/* c */ cpy, cmp, NUL, NUL, cpy, cmp, dec, NUL, iny, cmp, dex, NUL, cpy, cmp, dec, NUL,
+/* d */ bne, sbc, NUL, NUL, cpx, sbc, inc, NUL, cld, cmp, NUL, NUL, NUL, cmp, dec, NUL,
+/* e */ cpx, sbc, NUL, NUL, cpx, sbc, inc, NUL, inx, sbc, nop, NUL, cpx, sbc, inc, NUL,
+/* f */ beq, sbc, NUL, NUL, NUL, sbc, inc, NUL, sed, sbc, NUL, NUL, NUL, sbc, inc, NUL,
 };
 
 void print_cpustate()
@@ -1482,14 +666,14 @@ void print_cpustate()
 
 static void cpu_boot()
 {
-	printf("Booting CPU...\n");
-	printf("Starting memory...\n");
+	//printf("Booting CPU...\n");
+	//printf("Starting memory...\n");
 	memset(memory, 0, sizeof(memory));
 
-	printf("Starting CPU state...\n");
+	//printf("Starting CPU state...\n");
 	memset(&cpustate, 0, sizeof(cpustate));
 
-	printf("Starting stack...\n");
+	//printf("Starting stack...\n");
 	cpustate.SP = 0xff;
 }
 
@@ -1500,68 +684,20 @@ void cpu_init()
 
 void cpu_load(byte *prg, size_t size)
 {
-	union {
-		byte b[2];
-		addr full;
-	} pcaddress;
 	memcpy(prgmem, prg, size);
-	pcaddress.b[0] = memload(0xfffc);
-	pcaddress.b[1] = memload(0xfffd);
-	cpustate.PC = pcaddress.full;
+	cpustate.PC = (addr)memload(0xfffc) | ((addr)memload(0xfffd) << 8);
 };
 
 void check_interrupts()
 {
 	if (cpustate.NMI) {
 		cpustate.NMI = 0;
-		union {
-			byte b[2];
-			addr full;
-		} pcaddress, source;
-		pcaddress.b[0] = memload(0xfffa);
-		pcaddress.b[1] = memload(0xfffb);
-		source.full = cpustate.PC;
-		memstore(0x0100 + cpustate.SP--, cpustate.P);
-		memstore(0x0100 + cpustate.SP--, source.b[0]);
-		memstore(0x0100 + cpustate.SP--, source.b[1]);
-		cpustate.PC = pcaddress.full;
+		addr newpc = (addr) memload(0xfffa) | ((addr) memload(0xfffb) << 8);
+		stack_push(cpustate.P);
+		stack_push((byte)cpustate.PC);
+		stack_push((byte)(cpustate.PC >> 8));
+		cpustate.PC = newpc;
 	}
-};
-
-void cpu_run()
-{
-	byte op;
-	opfunct addressing, instruction;
-
-	printf("Running program at: 0x%04x\n", cpustate.PC);
-
-	do {
-		print_cpustate();
-		/* fetch */
-		op = memload(cpustate.PC);
-
-		/* decode */
-		addressing = addressing_map[op];
-		instruction = instruction_map[op];
-
-		if (func == NULL) {
-			fprintf(stderr, "Unrecognized instruction: %02x\n", op);
-			fprintf(stderr, "  At position: %04x\n", cpustate.PC);
-			cpu_dump(0);
-			exit(1);
-		}
-
-		/* advance */
-		cpustate.PC++;
-
-		/* execute */
-		addressing();
-		instruction();
-		check_interrupts();
-
-	} while (op != 0x00);
-	
-	printf("Program stopped at: 0x%04x\n", cpustate.PC-1);
 };
 
 void cpu_dump()
@@ -1588,3 +724,40 @@ void cpu_dump()
 
 	fclose(f);
 };
+
+void cpu_run()
+{
+	byte op;
+	opfunct addressing, instruction;
+
+	//printf("Running program at: 0x%04x\n", cpustate.PC);
+
+	do {
+		//print_cpustate();
+		/* fetch */
+		op = memload(cpustate.PC);
+
+		/* decode */
+		addressing = addressing_map[op];
+		instruction = instruction_map[op];
+
+		if (instruction == NULL) {
+			fprintf(stderr, "Unrecognized instruction: %02x\n", op);
+			fprintf(stderr, "  At position: %04x\n", cpustate.PC);
+			cpu_dump(0);
+			exit(1);
+		}
+
+		/* advance */
+		cpustate.PC++;
+
+		/* execute */
+		addressing();
+		instruction();
+		check_interrupts();
+
+	} while (op != 0x00);
+	
+	//printf("Program stopped at: 0x%04x\n", cpustate.PC-1);
+};
+

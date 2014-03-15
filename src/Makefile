@@ -12,6 +12,9 @@ clean:
 test_cpu: test_cpu.o cpu.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
+test: test_cpu
+	./test_cpu
+
 $(OBJ): main.o cpu.o ines.o ppu.o mmc.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
