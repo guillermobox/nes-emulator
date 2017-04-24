@@ -4,6 +4,6 @@ doc
 *.o
 tags
 core.dump
-nes-emulator
+emulator
+testsuite
 gmon.out
-test_*

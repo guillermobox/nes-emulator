@@ -52,6 +52,8 @@ static inline void memstore(addr address, byte data)
 
 static inline byte memload(addr address)
 {
+	if (address == 0x2006)
+		printf("Read in 2006\n");
 	if (address < 0x8000)
 		return *(memory + address);
 	else

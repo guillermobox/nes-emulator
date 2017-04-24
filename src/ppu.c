@@ -51,7 +51,7 @@ void ppu_init()
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		exit(1);
 
-	screen = SDL_SetVideoMode(SCR_WIDTH, SCR_HEIGHT, SCR_BPP, SDL_HWSURFACE);
+	screen = SDL_SetVideoMode(4*SCR_WIDTH, 4*SCR_HEIGHT, SCR_BPP, SDL_HWSURFACE);
 	if (!screen) {
 		SDL_Quit();
 		exit(1);
@@ -62,6 +62,7 @@ void ppu_init()
 void show_sprite(byte number)
 {
 	int i, j, color, row, column;
+	int z1, z2;
 	Uint32 *pixmem32;
 	Uint32 colour;
 
@@ -74,10 +75,16 @@ void show_sprite(byte number)
 			color = ((ppumemory[i]&(1<<j))!=0x0) + 2*((ppumemory[i+0x08]&(1<<j))!=0x0);
 			color *= 75;
 			colour = SDL_MapRGB(screen->format, color, color, color);
-			row = i%240;
-			column = j + 8 * (i/240);
-			pixmem32 = (Uint32*)(screen->pixels + column + row * screen->w);
-			*pixmem32 = colour;
+
+			row = 4 * (i%240);
+			column = 4 * (j + 8 * (i/240));
+
+			for (z1 = 0; z1 < 4; z1++) {
+				for (z2 = 0; z2 < 4; z2++) {
+					pixmem32 = (Uint32*)(screen->pixels + column+z1 + (row+z2) * screen->w);
+					*pixmem32 = colour;
+				}
+			}
 		}
 	};
 
@@ -91,7 +98,7 @@ void ppu_run()
 
 	while (1) {
 		int i;
-		for(i=0; i<512; i++)
+		for(i=0; i < 1024; i++)
 			show_sprite(i);
 		SDL_Flip(screen);
 		printf("ppu: Vblank draw\n");

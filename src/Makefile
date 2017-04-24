@@ -1,25 +1,30 @@
-CFLAGS := -Wall -Wextra -fno-diagnostics-show-caret -g -pg
-LDFLAGS:= -lpthread -lSDL
-OBJ    := nes-emulator
+CFLAGS  := -Wall -Wextra -fno-diagnostics-show-caret -g -pg -c
+LIBS    := -lpthread -lSDL
+BIN     := emulator
+BINTEST := testsuite
+Q       := @
 
-.PHONY: clean
+.PHONY: clean run check all
 
-all: $(OBJ) test_cpu
+all: $(BIN) $(BINTEST)
+
+%.o: %.c
+	@echo "  CC  " $@
+	$(Q)$(CC) $(CFLAGS) $^ -o $@
+
+$(BIN): main.o cpu.o ines.o ppu.o mmc.o
+$(BINTEST): test_cpu.o cpu.o
+
+$(BIN) $(BINTEST):
+	@echo "  LD  " $@
+	$(Q)$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
 
 clean:
-	rm -f *.o $(OBJ)
+	@echo " CLEAN"
+	$(Q)$(RM) -f *.o $(BIN) $(BINTEST) core.dump gmon.out
 
-test_cpu: test_cpu.o cpu.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+run: $(BIN)
+	./$(BIN) ../share/supermario.nes
 
-test: test_cpu
-	./test_cpu
-
-$(OBJ): main.o cpu.o ines.o ppu.o mmc.o
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
-
-run: $(OBJ)
-	./$(OBJ) ../share/supermario.nes
-
-runtest: test_cpu
-	./test_cpu
+check: $(BINTEST)
+	./$(BINTEST)
