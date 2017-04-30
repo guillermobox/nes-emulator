@@ -12,14 +12,18 @@
 #include "ines.h"
 #include "cpu.h"
 #include "ppu.h"
+#include "input.h"
 
-pthread_t cpu_thread, ppu_thread;
+pthread_t cpu_thread, ppu_thread, input_thread;
 
 void stop_emulation()
 {
 	pthread_kill(cpu_thread, SIGKILL);
 	pthread_join(cpu_thread, NULL);
+	pthread_kill(ppu_thread, SIGKILL);
+	pthread_join(ppu_thread, NULL);
 	cpu_dump();
+	ppu_dump();
 	/* better handling of interrupts would be a good idea */
 	exit(EXIT_FAILURE);
 };
@@ -45,6 +49,13 @@ void *ppu_thread_function(void *input)
 	return NULL;
 };
 
+void *input_thread_function(void *input)
+{
+	(void) input;
+	input_run();
+	return NULL;
+};
+
 int main(int argc, char *argv[])
 {
 	(void) argc;
@@ -58,9 +69,11 @@ int main(int argc, char *argv[])
 
 	pthread_create(&cpu_thread, NULL, cpu_thread_function, NULL);
 	pthread_create(&ppu_thread, NULL, ppu_thread_function, NULL);
+	pthread_create(&input_thread, NULL, input_thread_function, NULL);
 	
 	pthread_join(cpu_thread, NULL);
 	pthread_join(ppu_thread, NULL);
+	pthread_join(input_thread, NULL);
 
 	cpu_dump();
 

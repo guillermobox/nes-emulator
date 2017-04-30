@@ -1,7 +1,6 @@
 CFLAGS  := -Wall -Wextra -fno-diagnostics-show-caret -g -pg -c
 LIBS    := -lpthread -lSDL
 BIN     := emulator
-BINTEST := testsuite
 Q       := @
 
 .PHONY: clean run check all
@@ -12,10 +11,9 @@ all: $(BIN) $(BINTEST)
 	@echo "  CC  " $@
 	$(Q)$(CC) $(CFLAGS) $^ -o $@
 
-$(BIN): main.o cpu.o ines.o ppu.o mmc.o
-$(BINTEST): test_cpu.o cpu.o
+$(BIN): main.o cpu.o ines.o ppu.o mmc.o input.o
 
-$(BIN) $(BINTEST):
+$(BIN):
 	@echo "  LD  " $@
 	$(Q)$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
 
@@ -25,6 +23,3 @@ clean:
 
 run: $(BIN)
 	./$(BIN) ../share/supermario.nes
-
-check: $(BINTEST)
-	./$(BINTEST)
