@@ -1,7 +1,7 @@
 #ifndef _INPUT_H_
 #define _INPUT_H_
 
-void input_run();
+void keychange(SDL_KeyboardEvent *key);
 
 
 #endif

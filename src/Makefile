@@ -1,4 +1,5 @@
-CFLAGS  := -Wall -Wextra -fno-diagnostics-show-caret -g -pg -c
+CFLAGS  := -Wall -Wextra -fno-diagnostics-show-caret -c -g -pg
+LDFLAGS := -g -pg
 LIBS    := -lpthread -lSDL
 BIN     := emulator
 Q       := @

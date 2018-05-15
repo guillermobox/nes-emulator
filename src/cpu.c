@@ -13,6 +13,7 @@ typedef uint8_t byte;
 typedef uint16_t addr;
 typedef void (*opfunct)(void);
 
+int inint =0;
 /*
  * I'm mapping the addresses above 0x8000 directly onto the
  * memory bank of the application.
@@ -203,7 +204,7 @@ static void zey()
 
 static void aba()
 {
-	address  =  memload(cpustate.PC++);
+	address  = memload(cpustate.PC++);
 	address |= memload(cpustate.PC++) << 8;
 };
 
@@ -617,6 +618,7 @@ static void rti(void) /* page 132 MOS */
 {
 	cpustate.PC = stack_pull() << 8 | stack_pull();
 	cpustate.P = stack_pull();
+	inint -= 1;
 };
 
 static void brk(void) /* page 144 MOS */
@@ -889,6 +891,9 @@ void cpu_load(byte *prg, size_t size)
 void check_interrupts()
 {
 	if (cpustate.NMI) {
+		if (inint)
+			printf("Interruption overload\n");
+		inint += 1;
 		//printf("CPU: In NMI routine\n");
 		cpustate.NMI = 0;
 		addr newpc = (addr) memload(0xfffa) | ((addr) memload(0xfffb) << 8);
@@ -929,46 +934,52 @@ static long timediff(struct timespec from, struct timespec to)
 	return (to.tv_sec - from.tv_sec) * 1000000000 + to.tv_nsec - from.tv_nsec;
 };
 
-void cpu_run()
-{
+void cpucycle(){
 	byte op;
 	opfunct addressing, instruction;
+	op = memload(cpustate.PC);
+	if (op == 0x00) {
+		printf("Landed in BRK instruction, at 0x%04x\n", cpustate.PC);
+		cpu_dump();
+		ppu_dump();
+	}
+
+
+	/* decode */
+	addressing = addressing_map[op];
+	instruction = instruction_map[op];
+
+	if (instruction == NULL) {
+		fprintf(stderr, "Unrecognized instruction: %02x\n", op);
+		fprintf(stderr, "  At position: %04x\n", cpustate.PC);
+		cpu_dump(0);
+		exit(1);
+	}
+
+	/* advance */
+	cpustate.PC++;
+
+	/* execute */
+	addressing();
+	instruction();
+	check_interrupts();
+}
+
+
+void cpu_run()
+{
 	struct timespec start_cycle, end_cycle, remaining;
 	long elapsed;
-	long step = 10;
+	long step = 100;
 
 	do {
 		//print_cpustate();
 
+
 		/* fetch */
 		clock_gettime(CLOCK_REALTIME, &start_cycle);
-		op = memload(cpustate.PC);
-		if (op == 0x00) {
-			printf("Landed in BRK instruction, at 0x%04x\n", cpustate.PC);
-			cpu_dump();
-			ppu_dump();
-		}
 
-
-		/* decode */
-		addressing = addressing_map[op];
-		instruction = instruction_map[op];
-
-		if (instruction == NULL) {
-			fprintf(stderr, "Unrecognized instruction: %02x\n", op);
-			fprintf(stderr, "  At position: %04x\n", cpustate.PC);
-			cpu_dump(0);
-			exit(1);
-		}
-
-		/* advance */
-		cpustate.PC++;
-
-		/* execute */
-		addressing();
-		instruction();
-		check_interrupts();
-
+		cpucycle();
 		clock_gettime(CLOCK_REALTIME, &end_cycle);
 
 		elapsed = timediff(start_cycle, end_cycle);
@@ -978,9 +989,9 @@ void cpu_run()
 		}
 
 
-	} while (op != 0x00); /* Im stopping on brk */
+	} while (1); /* Im stopping on brk */
 
 	exit(1);
-	
+
 };
 

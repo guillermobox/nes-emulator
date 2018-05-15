@@ -7,10 +7,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <SDL/SDL.h>
+#include "input.h"
 
 #define SCR_WIDTH 256
 #define SCR_HEIGHT 240
-#define SCR_BPP 32
+#define SCR_BPP 8
 #define SCR_SCALE 3
 
 typedef uint8_t byte;
@@ -18,6 +19,7 @@ typedef uint16_t addr;
 
 SDL_Surface * screen = NULL;
 
+SDL_Color sdlpalette[64];
 byte palette[64][3] = {
 	{0x75, 0x75, 0x75},
 	{0x27, 0x1B, 0x8F},
@@ -109,7 +111,7 @@ extern struct st_cpustate {
 } cpustate;
 
 byte oam[0x100];
-byte ppumemory[0x10000];
+byte ppumemory[0x4000];
 extern byte memory[0x10000];
 
 void ppu_dump()
@@ -322,300 +324,181 @@ void ppu_init()
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		exit(1);
 
-	screen = SDL_SetVideoMode(SCR_SCALE*SCR_WIDTH, SCR_SCALE*SCR_HEIGHT, SCR_BPP, SDL_HWSURFACE);
+	screen = SDL_SetVideoMode(SCR_SCALE*SCR_WIDTH, SCR_SCALE*SCR_HEIGHT, SCR_BPP, SDL_HWPALETTE);
 	if (!screen) {
 		SDL_Quit();
 		exit(1);
 	}
+	int i;
+	for (i = 0; i < 64; i++) {
+		sdlpalette[i].r = palette[i][0];
+		sdlpalette[i].g = palette[i][1];
+		sdlpalette[i].b = palette[i][2];
+	}
+        SDL_SetPalette(screen, SDL_LOGPAL|SDL_PHYSPAL, sdlpalette, 0, 64);
 	SDL_memset(screen->pixels, 0, screen->h * screen->pitch);
 
 	funlockfile(stdout);
 };
 
-void show_sprite(byte number, byte mirrorx, byte mirrory, byte color, byte x, byte y)
-{
-	int i, j, row, column;
-	int z1, z2;
-	int pal;
-	Uint32 *pixmem32;
-	Uint32 colour;
-	addr offset;
-
-	if (state.PATFG == 1)
-		offset = 0x1000;
-	else
-		offset = 0x0000;
-
-	byte * tile;
-	tile = &ppumemory[offset + number*16];
-	int pixel;
-
-	for (i=0; i<8; i++) {
-		for (j=0; j<8; j++) {
-			pixel = (tile[j] >> (7-i) ) & 1;
-			pixel += 2 * ((tile[j + 8] >> (7-i)) & 1);
-			if (pixel == 0)
-				continue;
-			else
-				pal = ppumemory[0x3F10 + 4 * color + pixel];
-
-			colour = SDL_MapRGB(screen->format,
-				palette[pal][0],
-				palette[pal][1],
-				palette[pal][2]
-			);
-
-			if (mirrorx)
-				column = SCR_SCALE * (x + 7 - i);
-			else
-				column = SCR_SCALE * (x + i);
-			if (mirrory)
-				row = SCR_SCALE * (y + 7 - j);
-			else
-				row = SCR_SCALE * (y + j);
-
-			for (z1 = 0; z1 < SCR_SCALE; z1++) {
-				for (z2 = 0; z2 < SCR_SCALE; z2++) {
-					pixmem32 = (Uint32*)(screen->pixels + (column + z1)*4 + (row + z2) * screen->pitch);
-					*pixmem32 = colour;
-				}
-			}
-		}
-	};
-};
-
-
-void show_background(byte number, byte color, int ioff, int joff, byte scroll)
-{
-	int i, j, row, column;
-	int z1, z2;
-	int pal;
-	Uint32 *pixmem32;
-	Uint32 colour;
-	addr offset;
-
-	if (state.PATBG == 1)
-		offset = 0x1000;
-	else
-		offset = 0x0000;
-
-	byte * tile;
-	tile = &ppumemory[offset + number*16];
-	int pixel;
-
-	for (i=0; i<8; i++) {
-		for (j=0; j<8; j++) {
-			pixel = (tile[j] >> (7 - i)) & 1;
-			pixel += 2 * ((tile[j + 8] >> (7 - i)) & 1);
-			if (pixel == 0)
-				pal = ppumemory[0x3F00];
-			else
-				pal = ppumemory[0x3F00 + 4 * color + pixel];
-
-			colour = SDL_MapRGB(screen->format,
-				palette[pal][0],
-				palette[pal][1],
-				palette[pal][2]
-			);
-
-			row = SCR_SCALE * (joff * 8 + j);
-			column = SCR_SCALE * (ioff * 8 + i);
-
-			if (row < SCR_SCALE * 8)
-				continue;
-			
-//			if (column < scroll * SCR_SCALE)
-//				continue;
-			if (column - scroll * SCR_SCALE >= screen->w)
-				continue;
-
-			for (z1 = 0; z1 < SCR_SCALE; z1++) {
-				for (z2 = 0; z2 < SCR_SCALE; z2++) {
-	pixmem32 = (Uint32*)(screen->pixels + (column+z1 - scroll * SCR_SCALE)*4 + (row+z2) * screen->pitch);
-	*pixmem32 = colour;
-				}
-			}
-		}
-	};
-
-};
-
-void clearbackground()
-{
-	Uint32 color;
-//	byte backdrop;
-//
-//	backdrop = ppumemory[0x3F00];
-	color = SDL_MapRGB(screen->format,
-			0,
-			0,
-			0);
-
-	memset(screen->pixels, color, sizeof(Uint32) * screen->h * screen->w);
-
-};
-
-void paintsprites()
-{
-	int i;
-
-	if (state.SFG == 0) {
-		return;
-	}
-
-	for (i = 0; i < 64; i++) {
+struct st_sprite {
+	byte y, index;
+	union {
+		byte attr;
 		struct {
-			byte y, index, attribute, x;
-		} * sprite = (void*) &oam[i * 4];
-
-		show_sprite(sprite->index,
-				sprite->attribute & (1<<6),
-				sprite->attribute & (1<<7),
-				sprite->attribute & 3,
-				sprite->x,
-				sprite->y);
-	}
+			byte pal:2;
+			byte _nothing_:3;
+			byte priority:1;
+			byte xflip:1;
+			byte yflip:1;
+		};
+	};
+	byte x;
 };
 
-void paintbackground()
+void paintline(byte line)
 {
-	addr base, basemax;
-
-	if (state.SBG == 0) {
-		return;
-		clearbackground();
-	}
+	addr pos, nametable, attrtable, pattable;
+	byte scroll = state.scrollx;
+	byte i;
+	byte pixel, pal, tile, lowtile, hightile, color, x, y;
+	Uint8 *pixelp;
+	struct st_sprite *sprites[8];
+	byte spritecount = 0;
 
 	if (state.NT == 0) {
-		base = 0x2000;
-		basemax = 0x23C0;
+		nametable = 0x2000;
+		attrtable = 0x23C0;
 	} else {
 		printf("Oh waddup! %d\n", state.NT);
 		exit(1);
 	}
 
-	byte scroll = state.scrollx;
-	byte i, j, I, J, imin, xpos, ypos;
-	byte tile, attr, color;
-	addr pos;
+	// look for sprites to display
+	for (i = 0; i < 64; i++) {
+		struct st_sprite * sprite = (struct st_sprite *) &oam[i * 4];
 
-	imin = scroll / 8;
-	i = imin;
-	j = 0;
-
-	for (xpos = 0; xpos <= 32; xpos++) {
-
-		for (j = 0; j < 30; j++) {
-
-			ypos = j;
-
-			J = ypos / 4;
-
-			if (i < 32) {
-				I = i / 4;
-				pos = 0x2000 + i + j * 32;
-				attr = ppumemory[0x23C0 + I + J * 8];
-			} else {
-				I = (i - 32) / 4;
-				pos = 0x2400 + (i - 32) + j * 32;
-				attr = ppumemory[0x27C0 + I + J * 8];
-			}
-
-			tile = ppumemory[pos];
-
-			int k = 0;
-			if (i % 4 >= 2)
-				k += 1;
-			if (j % 4 >= 2)
-				k += 2;
-			color = (attr >> (k * 2)) & 0x03;
-
-			show_background(tile, color, xpos, ypos, scroll % 8);
+		if (sprite->y + 8 > line && sprite->y <= line && sprite->y != 0) {
+			if (i == 0)
+				state.HIT = 1;
+			sprites[spritecount++] = sprite;
 		}
-
-		i = (i + 1) % 64;
 	}
 
-//	for (i = 0; base < basemax; i++, base++) {
-//		byte tile, attribute, color;
-//		tile = ppumemory[base];
-//
-//		int I, J;
-//		int j;
-//
-//		j = i / 32;
-//
-//		I = (i % 32) / 4;
-//		J = j / 4;
-//
-//		attribute = ppumemory[basemax + I + J * 8];
-//		
-//
-//		show_background(tile, color, i % 32, i / 32, scroll);
-//	}
-//
-//	base = 0x2400;
-//	basemax = 0x27C0;
-//	for (i = 0; base < basemax; i++, base++) {
-//		byte tile, attribute, color;
-//		tile = ppumemory[base];
-//
-//		int I, J;
-//		int j;
-//
-//		j = i / 32;
-//
-//		I = (i % 32) / 4;
-//		if (i%32 > extratiles) continue;
-//		byte xpos, ypos;
-//
-//		xpos = 32 - extratiles + (i%32);
-//		ypos = i / 32;
-//
-//		if (xpos == 32 && scroll % 8 == 0) continue;
-//
-//		J = j / 4;
-//
-//		attribute = ppumemory[basemax + I + J * 8];
-//		
-//		int k = 0;
-//		if (i % 4 >= 2)
-//			k += 1;
-//		if (j % 4 >= 2)
-//			k += 2;
-//
-//		color = (attribute >> (k * 2)) & 0x03;
-//
-//		show_background(tile, color, xpos, ypos, scroll % 8);
-//	}
 
+	if (state.PATBG == 1)
+		pattable = 0x1000;
+	else
+		pattable = 0x0000;
 
-};
+	y = line;
+
+	// for each pixel
+	for (x = 0; x < 255; x++) {
+		byte tilex, tiley, attr;
+
+		tilex = (x + scroll) / 8;
+		tiley = y / 8;
+
+		pos = nametable + tilex + tiley * 32;
+		tile = ppumemory[pos];
+		pos = attrtable + (tilex/4) + (tiley/4)*8;
+		attr = ppumemory[pos];
+
+		int k = 0;
+		if (tilex % 4 >= 2)
+			k += 1;
+		if (tiley % 4 >= 2)
+			k += 2;
+		color = (attr >> (k * 2)) & 0x03;
+
+		/* get the 8 pixel slice of the tile to show */
+		lowtile = ppumemory[pattable + 16*tile + (y % 8)];
+		hightile = ppumemory[pattable + 16*tile + 8 + (y % 8)];
+
+		i = 7 - ((x + scroll) % 8);
+		pixel = (lowtile >> i) & 1;
+		pixel += 2 * ((hightile >> i) & 1);
+
+		if (pixel == 0)
+			pal = ppumemory[0x3F00];
+		else
+			pal = ppumemory[0x3F00 + 4 * color + pixel];
+
+		if (state.SBG) {
+			int z1, z2;
+			for (z1 = 0; z1 < SCR_SCALE; z1++)
+				for (z2 = 0; z2 < SCR_SCALE; z2++) {
+					pixelp = (screen->pixels + (z1 + SCR_SCALE*x) + (z2 + SCR_SCALE*y) * screen->pitch);
+					*pixelp = pal;
+				}
+		}
+	}
+
+	if (state.PATFG == 1)
+		pattable = 0x1000;
+	else
+		pattable = 0x0000;
+
+	for (i = 0; i < spritecount; i++) {
+		struct st_sprite * sprite = sprites[i];
+
+		lowtile = ppumemory[pattable + 16*sprite->index + ((y - sprite->y)%8)];
+		hightile = ppumemory[pattable + 16*sprite->index + 8 + ((y - sprite->y)%8)];
+
+		for (x = 0; x < 8; x++) {
+			if (sprite->xflip) {
+				pixel = (lowtile >> x) & 1;
+				pixel += 2 * ((hightile >> x) & 1);
+			} else {
+				pixel = (lowtile >> (7 - x)) & 1;
+				pixel += 2 * ((hightile >> (7 - x)) & 1);
+			}
+
+			if (pixel == 0)
+				continue;
+			else
+				pal = ppumemory[0x3F10 + 4 * sprite->pal + pixel];
+
+			if (state.SFG) {
+			int z1, z2;
+			for (z1 = 0; z1 < SCR_SCALE; z1++)
+			for (z2 = 0; z2 < SCR_SCALE; z2++) {
+				pixelp = (screen->pixels +
+						(z1 + SCR_SCALE*(sprite->x + x)) +
+						(z2 + SCR_SCALE * y) * screen->pitch);
+
+				*pixelp = pal;
+			}
+			}
+		}
+	}
+}
 
 static long timediff(struct timespec from, struct timespec to)
 {
 	return (to.tv_sec - from.tv_sec) * 1000000000 + to.tv_nsec - from.tv_nsec;
 };
 
-void ppu_run()
+void paintframe()
 {
 	struct timespec start, end, remain;
 	long elapsed;
-	long frame = 16000000 / 2;
+	long frame = 16666666 / 24;
+	byte line = 0x00;
 
-	while (1) {
-
+	for (line = 0; line < 240; line += 10) {
 		clock_gettime(CLOCK_REALTIME, &start);
-
-		/* Print the screen, by scanlines */
-		state.HIT = 0;
-
-		paintbackground();
-		state.HIT = 1;
-		paintsprites();
-
-		SDL_Flip(screen);
-
+		paintline(line);
+		paintline(line + 1);
+		paintline(line + 2);
+		paintline(line + 3);
+		paintline(line + 4);
+		paintline(line + 5);
+		paintline(line + 6);
+		paintline(line + 7);
+		paintline(line + 8);
+		paintline(line + 9);
 		clock_gettime(CLOCK_REALTIME, &end);
 
 		elapsed = timediff(start, end);
@@ -623,13 +506,50 @@ void ppu_run()
 		if (elapsed < frame) {
 			struct timespec sleepage ={.tv_sec=0, .tv_nsec=frame - elapsed};
 			nanosleep(&sleepage, &remain);
+		} else {
+			printf("Line overload!\n");
 		}
+	}
+
+}
+
+void ppu_run()
+{
+	long count = 1000;
+	SDL_Event event;
+
+	while (count) {
+		count--;
+
+		state.HIT = 0;
+		state.BLANK = 0;
+		paintframe();
+		SDL_Flip(screen);
+
+//		while (SDL_PollEvent(&event)) {
+//			switch (event.type) {
+//				case SDL_KEYDOWN:
+//				case SDL_KEYUP:
+//					keychange(&event.key);
+//					break;
+//			}
+//		}
+
+	//	elapsed = timediff(start, end);
+
+	//	if (elapsed < frame) {
+	//		struct timespec sleepage ={.tv_sec=0, .tv_nsec=frame - elapsed};
+	//		nanosleep(&sleepage, &remain);
+	//	} else {
+	//		printf("Frame overload!\n");
+	//	}
 
 		/* Send vblank signals */
 		state.BLANK = 1;
 		if (state.NMI)
 			cpustate.NMI = 1;
 	};
+	exit(0);
 };
 
 void ppu_load(byte * prg, size_t size)
